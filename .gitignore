@@ -42,8 +42,11 @@ next-env.d.ts
 
 
 # prompts
-/.prompt/
+prompts/
 
 
 # docs
-/.docs/
+docs/
+
+# agents
+agents/

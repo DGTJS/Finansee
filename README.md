@@ -44,7 +44,7 @@ npm run dev
 - [Animated Circular Progress Bar] (https://magicui.design/docs/components/animated-circular-progress-bar)
 - [Listbox] (https://headlessui.com/react/listbox)
 - [Popover] (https://headlessui.com/react/popover)
-- [Economical Calendar] prompts/EconomicCalendar.MD
-- [Transaction List] prompts/TransactionList.MD
+- [Economical Calendar] prompts/components/EconomicCalendar.MD
+- [Transaction List] prompts/components/TransactionList.MD
 
-Calendario para escolha de data: prompts/Calendar.MD
+Calendario para escolha de data: prompts/components/Calendar.MD
