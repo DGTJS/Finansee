@@ -1,69 +1,15 @@
-import Image from "next/image";
+import { ArrowDownRight, ArrowUpRight, Bell, CalendarClock, ChevronDown, CircleAlert, MoreHorizontal, Plus, Sparkles, Target, TrendingUp, WalletCards } from "@/components/icons";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Sidebar } from "@/components/dashboard/sidebar";
+import { CashflowChart } from "@/components/dashboard/chart";
+import { getDashboardData, formatBRL } from "@/server/dashboard";
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+function Metric({ label, value, detail, icon: Icon, tone }: { label: string; value: string; detail: string; icon: typeof TrendingUp; tone: "lime" | "violet" | "orange" }) { return <Card className="relative overflow-hidden"><div className={`absolute right-0 top-0 h-24 w-24 rounded-full blur-3xl ${tone === "lime" ? "bg-primary/15" : tone === "violet" ? "bg-violet-400/10" : "bg-orange-400/10"}`} /><CardContent className="relative p-5"><div className="flex items-start justify-between"><div className="grid size-10 place-items-center rounded-xl bg-muted text-muted-foreground"><Icon className="size-5" /></div><span className="flex items-center gap-1 text-xs font-semibold text-primary"><ArrowUpRight className="size-3" />{detail}</span></div><p className="mt-6 text-sm text-muted-foreground">{label}</p><p className="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl">{value}</p></CardContent></Card>; }
+export default async function Home() {
+  const data = await getDashboardData();
+  return <div className="min-h-screen bg-background"><Sidebar /><main className="min-h-screen lg:pl-64"><div className="mx-auto max-w-[1500px] px-5 pb-12 pt-20 sm:px-8 lg:px-10 lg:pt-8"><header className="flex flex-col gap-5 border-b border-border pb-7 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-sm text-muted-foreground">Sexta-feira, 15 de agosto de 2026</p><h1 className="mt-2 font-display text-3xl font-semibold tracking-tight sm:text-4xl">Bom dia, Diego <span className="text-primary">.</span></h1><p className="mt-2 max-w-lg text-sm text-muted-foreground">Aqui está o seu panorama financeiro para manter o mês sob controle.</p></div><div className="flex items-center gap-3"><Button variant="outline" size="icon" aria-label="Notificações"><Bell data-icon="inline-start" /></Button><Button><Plus data-icon="inline-start" />Nova transação</Button></div></header><div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="font-display text-lg font-semibold">Visão de agosto</h2><p className="text-sm text-muted-foreground">Acompanhe o que já aconteceu e o que vem pela frente.</p></div><Button variant="outline" size="sm" className="w-fit"><span className="size-2 rounded-full bg-primary" />Agosto 2026<ChevronDown data-icon="inline-end" /></Button></div><section className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Metric label="Saldo total" value={formatBRL(data.balance)} detail="8,4%" icon={WalletCards} tone="lime" /><Metric label="Saldo previsto" value={formatBRL(data.forecast)} detail="12,1%" icon={TrendingUp} tone="violet" /><Metric label="Receitas do mês" value={formatBRL(data.income)} detail="5,7%" icon={ArrowUpRight} tone="lime" /><Metric label="Despesas do mês" value={formatBRL(data.expenses)} detail="2,4%" icon={ArrowDownRight} tone="orange" /></section><section className="mt-5 grid gap-5 xl:grid-cols-[1.5fr_1fr]"><Card><CardHeader className="flex-row items-start justify-between"><div><CardTitle>Fluxo de caixa</CardTitle><CardDescription>Receitas e despesas nos últimos seis meses</CardDescription></div><div className="flex gap-4 text-xs text-muted-foreground"><span className="flex items-center gap-2"><span className="size-2 rounded-full bg-[var(--chart-income)]" />Receitas</span><span className="flex items-center gap-2"><span className="size-2 rounded-full bg-[var(--chart-expense)]" />Despesas</span></div></CardHeader><CardContent><CashflowChart /></CardContent></Card><Card className="bg-sidebar text-sidebar-foreground"><CardHeader><div className="flex items-center justify-between"><CardTitle className="text-sidebar-foreground">Saúde financeira</CardTitle><Sparkles className="size-5 text-primary" /></div><CardDescription className="text-sidebar-foreground/60">Seu ritmo este mês está excelente.</CardDescription></CardHeader><CardContent><div className="flex items-center gap-5 py-4"><div className="relative grid size-32 shrink-0 place-items-center rounded-full" style={{ background: "conic-gradient(var(--primary) 78%, var(--health-track) 0)" }}><div className="grid size-24 place-items-center rounded-full bg-sidebar"><span className="font-display text-3xl font-semibold">78</span><span className="-mt-2 text-[10px] text-sidebar-foreground/60">de 100</span></div></div><div><p className="text-sm font-medium">Você está no caminho certo</p><p className="mt-2 text-xs leading-5 text-sidebar-foreground/60">Seu saldo está crescendo e suas despesas essenciais ficaram dentro do planejado.</p></div></div><div className="mt-4 grid grid-cols-3 gap-2 border-t border-sidebar-border pt-4 text-center"><div><p className="font-display text-lg font-semibold text-primary">+18%</p><p className="mt-1 text-[10px] text-sidebar-foreground/60">economia</p></div><div><p className="font-display text-lg font-semibold">12</p><p className="mt-1 text-[10px] text-sidebar-foreground/60">dias positivos</p></div><div><p className="font-display text-lg font-semibold">04</p><p className="mt-1 text-[10px] text-sidebar-foreground/60">metas ativas</p></div></div></CardContent></Card></section><section className="mt-5 grid gap-5 xl:grid-cols-[1.15fr_0.85fr]"><Card><CardHeader className="flex-row items-start justify-between"><div><CardTitle>Transações recentes</CardTitle><CardDescription>Os últimos movimentos da sua vida financeira</CardDescription></div><Button variant="ghost" size="sm">Ver todas</Button></CardHeader><CardContent><div className="flex flex-col gap-1">{data.transactions.map((item, index) => <div key={`${item.description}-${index}`} className="group flex items-center gap-3 rounded-xl px-2 py-3 transition-colors hover:bg-muted"><div className={`grid size-10 shrink-0 place-items-center rounded-xl ${item.kind === "income" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>{item.kind === "income" ? <ArrowDownRight className="size-4 rotate-180" /> : <WalletCards className="size-4" />}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{item.description}</p><p className="mt-1 text-xs text-muted-foreground">{item.category} · {item.date}</p></div><p className={`text-sm font-semibold ${item.kind === "income" ? "text-primary" : "text-foreground"}`}>{item.kind === "income" ? "+" : "−"}{formatBRL(Math.abs(item.amountCents))}</p><MoreHorizontal className="hidden size-4 text-muted-foreground sm:block" /></div>)}</div></CardContent></Card><div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-1"><Card><CardHeader className="flex-row items-start justify-between"><div><CardTitle>Próximos vencimentos</CardTitle><CardDescription>Você tem {formatBRL(data.pending)} pendentes</CardDescription></div><CalendarClock className="size-5 text-orange-400" /></CardHeader><CardContent><div className="flex flex-col gap-4"><div className="flex items-center gap-3"><div className="grid size-10 place-items-center rounded-xl bg-orange-400/10 text-orange-400"><CalendarClock className="size-4" /></div><div className="flex-1"><p className="text-sm font-medium">Energia elétrica</p><p className="text-xs text-muted-foreground">vence em 5 dias</p></div><p className="text-sm font-semibold">R$ 126,90</p></div><div className="flex items-center gap-3"><div className="grid size-10 place-items-center rounded-xl bg-violet-400/10 text-violet-400"><CreditCardIcon /></div><div className="flex-1"><p className="text-sm font-medium">Fatura do cartão</p><p className="text-xs text-muted-foreground">vence em 8 dias</p></div><p className="text-sm font-semibold">R$ 89,00</p></div></div></CardContent></Card><Card><CardHeader className="flex-row items-start justify-between"><div><CardTitle>Meta em destaque</CardTitle><CardDescription>Viagem de fim de ano</CardDescription></div><Target className="size-5 text-primary" /></CardHeader><CardContent><div className="flex items-end justify-between"><span className="font-display text-2xl font-semibold">61,8%</span><span className="text-xs text-muted-foreground">R$ 7.420 de R$ 12.000</span></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full w-[62%] rounded-full bg-primary" /></div><p className="mt-3 text-xs text-muted-foreground">Continue assim. Faltam 4 meses para sua meta.</p></CardContent></Card></div></section><div className="mt-5 flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/10 px-5 py-4"><CircleAlert className="size-5 shrink-0 text-primary" /><p className="text-sm"><span className="font-semibold">Atenção no orçamento.</span> Você já usou 78% do limite de Alimentação este mês.</p><Button variant="ghost" size="sm" className="ml-auto hidden sm:inline-flex">Revisar</Button></div><p className="mt-8 text-center text-xs text-muted-foreground">{data.seeded ? "Dados sincronizados com seu espaço pessoal" : "Conecte o Postgres local e rode npm run db:seed para visualizar seus dados"} · Finansee 2026</p></div></main></div>;
 }
+function CreditCardIcon() { return <span className="text-xs font-bold">••</span>; }
+
+

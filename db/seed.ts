@@ -1,8 +1,12 @@
-import "dotenv/config";
 import { randomUUID } from "node:crypto";
+import { config } from "dotenv";
 import { db, pool } from ".";
 import { alert, category, financialAccount, financialSpace, goal, transaction, user, spaceMember } from "./schema";
 
+config({ path: ".env.local" });
+config();
+
+async function main() {
 const now = new Date();
 const userId = "demo-user";
 const spaceId = "personal-space";
@@ -38,3 +42,10 @@ for (const item of transactions) await db.insert(transaction).values(item).onCon
 await db.insert(goal).values({ id: "goal-trip", financialSpaceId: spaceId, name: "Viagem de fim de ano", targetCents: 1200000, currentCents: 742000, dueDate: "2026-12-15" }).onConflictDoNothing();
 await db.insert(alert).values({ id: "alert-budget", financialSpaceId: spaceId, title: "Alimentação em atenção", body: "Você já usou 78% do orçamento desta categoria.", severity: "warning" }).onConflictDoNothing();
 await pool.end();
+}
+
+main().catch(async (error) => {
+  console.error(error);
+  await pool.end();
+  process.exitCode = 1;
+});

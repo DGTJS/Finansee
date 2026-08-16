@@ -1,26 +1,12 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+:root { --icon-size: 1.125rem; }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+:root { --background: #f5f6f3; --foreground: #171a18; --card: #ffffff; --card-foreground: #171a18; --primary: #b8f34b; --primary-foreground: #17210b; --muted: #edf0eb; --muted-foreground: #727a73; --accent: #e7ede3; --border: #dfe5dc; --popover: #ffffff; --popover-foreground: #171a18; --sidebar: #20251f; --sidebar-foreground: #eef2ea; --sidebar-accent: #2c342b; --sidebar-border: #394237; --status-info: #6c9ee8; --status-info-soft: color-mix(in srgb, var(--status-info) 12%, transparent); --status-warning: #d89b45; --status-warning-soft: color-mix(in srgb, var(--status-warning) 12%, transparent); --status-danger: #d66b77; --status-danger-soft: color-mix(in srgb, var(--status-danger) 12%, transparent); --status-success: #8fcb36; --chart-income: var(--status-success); --chart-expense: #a98edb; --health-track: #3b4738; }
+.dark { --background: #111411; --foreground: #f2f5ef; --card: #1a1f1a; --card-foreground: #f2f5ef; --muted: #242a24; --muted-foreground: #929b91; --accent: #2a3329; --border: #303a2f; --popover: #1a1f1a; --popover-foreground: #f2f5ef; --sidebar: #0c0f0c; --sidebar-foreground: #eef2ea; --sidebar-accent: #1b241b; --sidebar-border: #283226; --status-info: #8db5f0; --status-warning: #efba6c; --status-danger: #ee929b; --status-success: #b8f34b; --chart-income: var(--status-success); --chart-expense: #c4a6ef; --health-track: #3b4738; }
+@theme inline { --color-background: var(--background); --color-foreground: var(--foreground); --color-card: var(--card); --color-card-foreground: var(--card-foreground); --color-primary: var(--primary); --color-primary-foreground: var(--primary-foreground); --color-muted: var(--muted); --color-muted-foreground: var(--muted-foreground); --color-accent: var(--accent); --color-border: var(--border); --color-popover: var(--popover); --color-popover-foreground: var(--popover-foreground); --color-sidebar: var(--sidebar); --color-sidebar-foreground: var(--sidebar-foreground); --color-sidebar-accent: var(--sidebar-accent); --color-sidebar-border: var(--sidebar-border); --color-status-info: var(--status-info); --color-status-warning: var(--status-warning); --color-status-danger: var(--status-danger); --color-status-success: var(--status-success); --color-violet-400: var(--status-info); --color-orange-400: var(--status-warning); --color-red-300: var(--status-danger); --font-sans: var(--font-body); --font-display: var(--font-display); }
+* { border-color: var(--border); }
+.finansee-icon, [data-icon] { width: var(--icon-size); height: var(--icon-size); flex: none; }
+html { background: var(--background); }
+body { background: var(--background); color: var(--foreground); font-family: var(--font-body), sans-serif; }
+::selection { background: var(--primary); color: var(--primary-foreground); }

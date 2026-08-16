@@ -1,0 +1,2 @@
+"use client";
+export default function Error({ reset }: { error: Error & { digest?: string }; reset: () => void }) { return <main className="grid min-h-screen place-items-center bg-background p-6 text-center"><div><p className="text-sm uppercase tracking-[0.2em] text-primary">Algo saiu do eixo</p><h1 className="mt-3 font-display text-3xl font-semibold">Não conseguimos carregar seus dados.</h1><button onClick={reset} className="mt-6 rounded-xl bg-primary px-5 py-3 font-medium text-primary-foreground">Tentar novamente</button></div></main>; }
