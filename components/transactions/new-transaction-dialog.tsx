@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { getBusinessDate } from "@/lib/business-date";
+import { BankMark } from "@/components/accounts/bank-mark";
 
 const monthNames = [
   "Janeiro",
@@ -64,7 +65,12 @@ type FieldName =
   | "source"
   | "amount";
 type FieldErrors = Partial<Record<FieldName, string>>;
-type Option = { value: string; label: string };
+type Option = {
+  value: string;
+  label: string;
+  type?: string;
+  bank?: string | null;
+};
 const sourceOptions: Option[] = [
   { value: "Vale alimentação (VA)", label: "Vale alimentação (VA)" },
   { value: "Vale refeição (VR)", label: "Vale refeição (VR)" },
@@ -94,12 +100,14 @@ function SelectField({
   options,
   error,
   icon: Icon,
+  showBank = false,
 }: {
   value: string;
   onValueChange: (value: string) => void;
   options: Option[];
   error?: string;
   icon: typeof WalletCards;
+  showBank?: boolean;
 }) {
   const selected = options.find((option) => option.value === value);
   return (
@@ -118,7 +126,15 @@ function SelectField({
               selected && "bg-primary/12 text-primary",
             )}
           >
-            <Icon className="size-5" />
+            {showBank && selected ? (
+              <BankMark
+                name={selected.bank ?? selected.label}
+                type={selected.type ?? "checking"}
+                className="size-10 rounded-xl"
+              />
+            ) : (
+              <Icon className="size-5" />
+            )}
           </span>
           <span className="min-w-0">
             <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
@@ -138,7 +154,18 @@ function SelectField({
               value={option.value}
               className="rounded-xl py-2.5 pl-9 pr-3 focus:bg-primary/10 focus:text-foreground"
             >
-              {option.label}
+              <span className="flex min-w-0 items-center gap-3">
+                <>
+                  {showBank ? (
+                    <BankMark
+                      name={option.bank ?? option.label}
+                      type={option.type ?? "checking"}
+                      className="size-9 rounded-lg"
+                    />
+                  ) : null}
+                </>
+                <span className="truncate">{option.label}</span>
+              </span>
             </SelectItem>
           ))}
         </SelectGroup>
@@ -231,7 +258,12 @@ function CalendarStep({
   );
 }
 
-type TransactionAccountOption = { value: string; label: string; type: string };
+type TransactionAccountOption = {
+  value: string;
+  label: string;
+  type: string;
+  bank?: string | null;
+};
 type TransactionCategoryOption = { value: string; label: string; kind: string };
 type EditableTransaction = {
   id: string;
@@ -554,6 +586,7 @@ export function NewTransactionDialog({
                     error={errors.account}
                     options={accountOptions}
                     icon={WalletCards}
+                    showBank
                   />
                   <ErrorText>{errors.account}</ErrorText>
                 </div>
