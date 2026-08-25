@@ -1,0 +1,2 @@
+ALTER TABLE "financial_account" ADD COLUMN "owner_user_id" text;--> statement-breakpoint
+ALTER TABLE "financial_account" ADD CONSTRAINT "financial_account_owner_user_id_user_id_fk" FOREIGN KEY ("owner_user_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;

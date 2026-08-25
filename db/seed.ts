@@ -1,51 +1,25 @@
-import { randomUUID } from "node:crypto";
 import { config } from "dotenv";
-import { db, pool } from ".";
-import { alert, category, financialAccount, financialSpace, goal, transaction, user, spaceMember } from "./schema";
+import { hashPassword } from "better-auth/crypto";
+import { prisma } from "@/lib/prisma";
 
 config({ path: ".env.local" });
 config();
 
-async function main() {
-const now = new Date();
-const userId = "demo-user";
-const spaceId = "personal-space";
-const checkingId = "account-checking";
-const cardId = "account-card";
-const salaryId = "category-salary";
-const homeId = "category-home";
-const foodId = "category-food";
-const transportId = "category-transport";
-
-await db.insert(user).values({ id: userId, name: "Diego Martins", email: "demo@finansee.local", emailVerified: true }).onConflictDoNothing();
-await db.insert(financialSpace).values({ id: spaceId, name: "Meu Finansee", ownerId: userId }).onConflictDoNothing();
-await db.insert(spaceMember).values({ id: "member-demo", financialSpaceId: spaceId, userId, role: "owner" }).onConflictDoNothing();
-await db.insert(financialAccount).values([
-  { id: checkingId, financialSpaceId: spaceId, name: "Conta principal", type: "checking", balanceCents: 1245000, color: "lime" },
-  { id: cardId, financialSpaceId: spaceId, name: "Cartão Nubank", type: "credit_card", balanceCents: -218900, color: "violet" },
-]).onConflictDoNothing();
-await db.insert(category).values([
-  { id: salaryId, financialSpaceId: spaceId, name: "Salário", kind: "income", color: "lime" },
-  { id: homeId, financialSpaceId: spaceId, name: "Moradia", kind: "expense", color: "orange" },
-  { id: foodId, financialSpaceId: spaceId, name: "Alimentação", kind: "expense", color: "blue" },
-  { id: transportId, financialSpaceId: spaceId, name: "Transporte", kind: "expense", color: "pink" },
-]).onConflictDoNothing();
-const transactions = [
-  { id: randomUUID(), financialSpaceId: spaceId, accountId: checkingId, categoryId: salaryId, description: "Salário mensal", amountCents: 820000, kind: "income", status: "paid", competenceDate: "2026-08-05", paidAt: now },
-  { id: randomUUID(), financialSpaceId: spaceId, accountId: checkingId, categoryId: homeId, description: "Aluguel apartamento", amountCents: -235000, kind: "expense", status: "paid", competenceDate: "2026-08-08", paidAt: now },
-  { id: randomUUID(), financialSpaceId: spaceId, accountId: cardId, categoryId: foodId, description: "Mercado da semana", amountCents: -18640, kind: "expense", status: "paid", competenceDate: "2026-08-12", paidAt: now },
-  { id: randomUUID(), financialSpaceId: spaceId, accountId: cardId, categoryId: transportId, description: "Combustível", amountCents: -12000, kind: "expense", status: "paid", competenceDate: "2026-08-14", paidAt: now },
-  { id: randomUUID(), financialSpaceId: spaceId, accountId: checkingId, categoryId: homeId, description: "Energia elétrica", amountCents: -12690, kind: "expense", status: "pending", competenceDate: "2026-08-20", dueDate: "2026-08-20" },
-  { id: randomUUID(), financialSpaceId: spaceId, accountId: checkingId, categoryId: foodId, description: "Restaurante quinta", amountCents: -8900, kind: "expense", status: "pending", competenceDate: "2026-08-22", dueDate: "2026-08-22" },
-];
-for (const item of transactions) await db.insert(transaction).values(item).onConflictDoNothing();
-await db.insert(goal).values({ id: "goal-trip", financialSpaceId: spaceId, name: "Viagem de fim de ano", targetCents: 1200000, currentCents: 742000, dueDate: "2026-12-15" }).onConflictDoNothing();
-await db.insert(alert).values({ id: "alert-budget", financialSpaceId: spaceId, title: "Alimentação em atenção", body: "Você já usou 78% do orçamento desta categoria.", severity: "warning" }).onConflictDoNothing();
-await pool.end();
+async function ensureUser(id: string, name: string, email: string, password: string) {
+  const user = await prisma.user.upsert({ where: { id }, update: { name, email, emailVerified: true }, create: { id, name, email, emailVerified: true } });
+  const passwordHash = await hashPassword(password);
+  await prisma.account.upsert({ where: { id: `${id}-credential` }, update: { password: passwordHash }, create: { id: `${id}-credential`, accountId: id, providerId: "credential", userId: id, password: passwordHash } });
+  return user;
 }
 
-main().catch(async (error) => {
-  console.error(error);
-  await pool.end();
-  process.exitCode = 1;
-});
+async function main() {
+  const diego = await ensureUser("demo-user", "Diego Martins", "demo@finansee.local", "Demo!Finansee2026");
+  const raissa = await ensureUser("raissa-demo", "Raissa Martins", "raissa@finansee.local", "Raissa!Finansee2026");
+  await prisma.financialSpace.upsert({ where: { id: "personal-space" }, update: { name: "Meu Finansee", ownerId: diego.id }, create: { id: "personal-space", name: "Meu Finansee", ownerId: diego.id } });
+  await prisma.financialSpace.upsert({ where: { id: "raissa-space" }, update: { name: "Espaço da Raissa", ownerId: raissa.id }, create: { id: "raissa-space", name: "Espaço da Raissa", ownerId: raissa.id } });
+  await prisma.spaceMember.upsert({ where: { id: "member-demo" }, update: { status: "active", role: "owner" }, create: { id: "member-demo", financialSpaceId: "personal-space", userId: diego.id, role: "owner" } });
+  await prisma.spaceMember.upsert({ where: { id: "member-raissa" }, update: { status: "active", role: "owner" }, create: { id: "member-raissa", financialSpaceId: "raissa-space", userId: raissa.id, role: "owner" } });
+  console.log("Prisma seed concluído. Demo: demo@finansee.local / Demo!Finansee2026");
+}
+
+main().catch((error) => { console.error(error); process.exitCode = 1; }).finally(() => prisma.$disconnect());

@@ -7,7 +7,7 @@ Sistema financeiro pessoal focado em clareza, velocidade e uso confortável em q
 - Next.js 16 App Router + React 19 + TypeScript strict
 - Tailwind CSS v4 + tokens CSS + componentes base inspirados em shadcn/ui
 - Drizzle ORM + PostgreSQL + Better Auth + Zod
-- Recharts para visualização e Lucide para ícones
+- Recharts para visualização, Lucide para ícones de interface, Simple Icons e TheSVG Icons para marcas bancárias
 - Docker Compose somente no desenvolvimento local
 
 ## Rodar localmente
@@ -24,7 +24,7 @@ npm run dev
 
 Abra `http://localhost:3000`. O dashboard tenta ler o banco local; antes do seed, ele exibe uma orientação de configuração para manter o primeiro carregamento amigável.
 
-Em produção, defina `DATABASE_URL`, `BETTER_AUTH_SECRET` e `BETTER_AUTH_URL` no provedor de hospedagem. O segredo padrão existe apenas para o ambiente local e deve ser substituído antes de publicar.
+Defina `DATABASE_URL`, `BETTER_AUTH_SECRET` e `BETTER_AUTH_URL` no provedor de hospedagem. O segredo padrão existe apenas para o ambiente local e deve ser substituído antes de publicar. Todas as rotas do painel exigem uma sessão Better Auth válida, inclusive durante o desenvolvimento.
 
 ## Scripts
 
@@ -33,14 +33,22 @@ Em produção, defina `DATABASE_URL`, `BETTER_AUTH_SECRET` e `BETTER_AUTH_URL` n
 ## Componentes implementados
 
 - Layout responsivo com sidebar desktop e menu móvel
-- Cards de métricas para saldo realizado, saldo previsto, receitas e despesas
-- Gráfico de fluxo de caixa com receita versus despesa
-- Indicador de saúde financeira e progresso de meta
+- Cards de métricas para saldo realizado, saldo previsto, receitas e despesas consultados por espaço
+- Gráfico de fluxo de caixa com receita versus despesa calculado a partir das transações
+- Indicador de saúde financeira, progresso de meta e alerta derivados do banco
 - Lista de transações em BRL, próximos vencimentos e alerta de orçamento
+- `components/ui/transaction-list.tsx` como lista reutilizável para transações e contas a pagar; cada linha é clicável e abre os detalhes animados do padrão documentado
+- Metas editáveis com atualização segura por `financialSpaceId` e Central de ajuda em `/help`
+- Configuração de perfil com nome, e-mail, upload de avatar JPG/PNG/WebP validado no servidor, senha, convite com token hash/expiração e exclusão confirmada da conta
+- `components/accounts/bank-mark.tsx` como identidade reutilizável com marcas reais locais de Nubank, Bradesco e Itaú, com avatar do responsável separado da conta principal
+- Contas fixas derivadas de lançamentos históricos reais, com gráfico mensal e destaque de valores pendentes
+- Tela `/investments` consulta cotações brasileiras reais no backend via brapi.dev, permite cadastrar/remover posições no PostgreSQL e calcula valor atual e rendimento a partir do preço médio e da cotação disponível; sem cotação, exibe o estado indisponível sem inventar números
+- Navbar com notificações reais, alternância de tema e animações de saudação por horário
 - Estados globais de carregamento, erro e página não encontrada
 - Tokens semânticos de cor preparados para tema claro/escuro
 - Handler Better Auth em `app/api/auth/[...all]/route.ts`
-- Schema Drizzle com isolamento por `financialSpaceId` e valores monetários em centavos
+- Recuperação de senha via Better Auth; em desenvolvimento o link é exibido para teste local e em produção usa `RESEND_API_KEY` e `RESEND_FROM_EMAIL`
+- Schema Drizzle com isolamento por `financialSpaceId`, valores monetários em centavos, recorrências, grupos de parcelas, autoria de lançamentos e ciclo individual de cartões
 
 ## Padrão UI/UX obrigatório
 
@@ -51,6 +59,7 @@ Estas regras devem ser verificadas em toda nova tela ou alteração visual:
 - Garantir que cards sejam responsivos, alinhados e tenham espaçamentos consistentes.
 - Manter ícones com tamanhos visuais padronizados, alinhamento consistente e área de toque adequada.
 - Usar primeiro os componentes listados neste README e em `prompts/components/`, adaptando-os ao Finansee antes de criar uma solução nova.
+- Componentes visuais recorrentes devem existir em `components/` e ser reutilizados entre as páginas; não duplicar cards, métricas, filtros ou padrões de espaçamento dentro de uma rota.
 
 ## Skills de referência
 
@@ -62,14 +71,35 @@ Estas regras devem ser verificadas em toda nova tela ou alteração visual:
 
 ## Dados e segurança
 
-Consultas financeiras devem sempre ser filtradas pelo espaço financeiro do usuário. Valores são armazenados em `integer` como centavos; transferências e parcelamentos serão adicionados como operações transacionais na próxima etapa. A camada de produção recebe apenas `DATABASE_URL` de um PostgreSQL gerenciado e não depende do Docker Compose.
+Consultas financeiras devem sempre ser filtradas pelo espaço financeiro ativo. Valores são armazenados em `integer` como centavos. A camada de produção recebe apenas `DATABASE_URL` de um PostgreSQL gerenciado e não depende do Docker Compose.
+
+As regras funcionais oficiais estão em [`docs/DOMAIN_RULES.md`](./docs/DOMAIN_RULES.md). Elas definem ciclo de vida, sinais de receitas e despesas, competência, vencimento, saldo realizado e previsto, transferências, parcelamentos, recorrências, orçamentos, metas, alertas e permissões de espaços compartilhados.
+
+A matriz de requisitos, critérios de aceite e ordem de implementação está em [`docs/REQUIREMENTS.md`](./docs/REQUIREMENTS.md).
+
+## Estado atual do painel
+
+O painel possui autenticação Better Auth, criação automática do espaço pessoal no cadastro e guardas de sessão/membro nas leituras e mutações. A troca de espaço ocorre por `?space=` quando o usuário possui associação válida.
+
+O CRUD inicial contempla criação e edição de transações simples pelo fluxo em três etapas, validação por campo, origem de receitas (salário, VA, VR e benefícios), filtros, cancelamento lógico com autoria, criação/edição/arquivamento persistido de contas, fechamento e vencimento de cartões, adição de saldo, transferência atômica entre contas, parcelamentos, recorrências pausáveis, criação/edição/remoção de metas e criação/remoção de orçamentos. Contas arquivadas permanecem no histórico, mas não aparecem em novos lançamentos. Alertas de orçamento, vencimento e saldo são derivados dos dados atuais; o sino permite marcar alertas armazenados como lidos. Configurações permitem perfil com foto, senha, recuperação de senha, exclusão protegida, convites e gestão de papel/status de membros. O logout invalida a sessão pelo Better Auth e páginas protegidas redirecionam para o login. Relatórios já possuem filtro de período, resumo agregado, gastos por categoria e maiores despesas. O calendário usa competência, vencimento, status e avatar da conta vindos do banco. Todas as telas usam tokens semânticos e componentes shadcn existentes no projeto.
+
+O componente documentado em `prompts/components/EconomicCalendar.MD` foi adaptado para `components/ui/economic-calendar.tsx` como uma lista horizontal responsiva de contas e cartões, exibindo dívidas em aberto e históricos de contas fixas derivados do banco, sem dependência de dados econômicos externos.
+
+O padrão `TransactionList` documentado em `prompts/components/TransactionList.MD` é usado no dashboard para transações recentes e próximos vencimentos. A implementação mantém a composição animada de lista/detalhes do prompt, valores em BRL e uma única estrutura reutilizável entre telas.
+
+Configurações usa dados reais do espaço ativo para cadastrar rendas individuais. Salário, VA, VR e outros benefícios guardam pessoa responsável, valor, dia de recebimento e conta de destino. O perfil aceita upload de imagem limitado a 500 KB e os avatares são reutilizados em navbar, cartões e detalhes de transações. O convite usa token aleatório armazenado somente como hash, expira em sete dias e valida o e-mail do membro antes de ativar o acesso. Membros ativos também carregam status e permissões por módulo no banco; proprietários e administradores mantêm os privilégios administrativos definidos em `docs/FAMILY_ACCOUNTS.md`.
+
+Investimentos usa a API da brapi.dev no servidor, com `BRAPI_TOKEN` opcional e `FINANSEE_INVESTMENT_SYMBOLS` para configurar os ativos consultados. Cotações são dados de mercado e a interface deixa explícito que a leitura não é recomendação financeira.
 
 ## Próximos módulos
 
-1. Fluxo visual de cadastro/login e proteção efetiva das rotas por sessão.
-2. CRUD de transações, contas e transferências atômicas.
-3. Recorrências, parcelamentos, orçamentos, metas e alertas editáveis.
-4. Relatórios, auditoria, testes de domínio e revisão visual em mobile/tablet/desktop.
+1. Evoluir permissões por módulo com telas administrativas para proprietários e administradores.
+2. Adicionar edição em lote de parcelamentos e recorrências já gerados.
+3. Expandir alertas configuráveis para saldo baixo, vencimento e alterações no espaço.
+4. Adicionar histórico persistido de cotações e evolução das posições, mantendo a leitura informativa.
+5. Ampliar testes de integração, acessibilidade e revisão visual automatizada nas larguras suportadas.
+
+O `db:seed` cria fixtures locais reproduzíveis para validar o painel, incluindo os espaços de Diego, Raissa e a conta conjunta. Esses valores demonstrativos não representam dados de produção; em produção, os números devem vir exclusivamente das entidades cadastradas no PostgreSQL do ambiente.
 
 ## Documentação
 

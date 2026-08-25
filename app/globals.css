@@ -1,12 +1,77 @@
 @import "tailwindcss";
 
-:root { --icon-size: 1.125rem; }
+:root { --icon-size: 1.125rem; --account-on-color: #ffffff; }
 
-:root { --background: #f5f6f3; --foreground: #171a18; --card: #ffffff; --card-foreground: #171a18; --primary: #b8f34b; --primary-foreground: #17210b; --muted: #edf0eb; --muted-foreground: #727a73; --accent: #e7ede3; --border: #dfe5dc; --popover: #ffffff; --popover-foreground: #171a18; --sidebar: #20251f; --sidebar-foreground: #eef2ea; --sidebar-accent: #2c342b; --sidebar-border: #394237; --status-info: #6c9ee8; --status-info-soft: color-mix(in srgb, var(--status-info) 12%, transparent); --status-warning: #d89b45; --status-warning-soft: color-mix(in srgb, var(--status-warning) 12%, transparent); --status-danger: #d66b77; --status-danger-soft: color-mix(in srgb, var(--status-danger) 12%, transparent); --status-success: #8fcb36; --chart-income: var(--status-success); --chart-expense: #a98edb; --health-track: #3b4738; }
-.dark { --background: #111411; --foreground: #f2f5ef; --card: #1a1f1a; --card-foreground: #f2f5ef; --muted: #242a24; --muted-foreground: #929b91; --accent: #2a3329; --border: #303a2f; --popover: #1a1f1a; --popover-foreground: #f2f5ef; --sidebar: #0c0f0c; --sidebar-foreground: #eef2ea; --sidebar-accent: #1b241b; --sidebar-border: #283226; --status-info: #8db5f0; --status-warning: #efba6c; --status-danger: #ee929b; --status-success: #b8f34b; --chart-income: var(--status-success); --chart-expense: #c4a6ef; --health-track: #3b4738; }
-@theme inline { --color-background: var(--background); --color-foreground: var(--foreground); --color-card: var(--card); --color-card-foreground: var(--card-foreground); --color-primary: var(--primary); --color-primary-foreground: var(--primary-foreground); --color-muted: var(--muted); --color-muted-foreground: var(--muted-foreground); --color-accent: var(--accent); --color-border: var(--border); --color-popover: var(--popover); --color-popover-foreground: var(--popover-foreground); --color-sidebar: var(--sidebar); --color-sidebar-foreground: var(--sidebar-foreground); --color-sidebar-accent: var(--sidebar-accent); --color-sidebar-border: var(--sidebar-border); --color-status-info: var(--status-info); --color-status-warning: var(--status-warning); --color-status-danger: var(--status-danger); --color-status-success: var(--status-success); --color-violet-400: var(--status-info); --color-orange-400: var(--status-warning); --color-red-300: var(--status-danger); --font-sans: var(--font-body); --font-display: var(--font-display); }
+:root { --background: #f5f6f3; --foreground: #171a18; --card: #ffffff; --card-foreground: #171a18; --primary: #b8f34b; --primary-foreground: #17210b; --muted: #edf0eb; --muted-foreground: #727a73; --accent: #e7ede3; --accent-foreground: #171a18; --border: #dfe5dc; --input: #dfe5dc; --ring: #b8f34b; --destructive: #d66b77; --popover: #ffffff; --popover-foreground: #171a18; --sidebar: #20251f; --sidebar-foreground: #eef2ea; --sidebar-accent: #2c342b; --sidebar-border: #394237; --status-info: #6c9ee8; --status-info-soft: color-mix(in srgb, var(--status-info) 12%, transparent); --status-warning: #d89b45; --status-warning-soft: color-mix(in srgb, var(--status-warning) 12%, transparent); --status-danger: #d66b77; --status-danger-soft: color-mix(in srgb, var(--status-danger) 12%, transparent); --status-success: #8fcb36; --chart-income: var(--status-success); --chart-expense: #a98edb; --health-track: #3b4738; --account-purple: #7652c8; --account-red: #d86b68; --radius: 1rem; --radius-md: 0.75rem; --card-radius: 1rem; --card-shadow: 0 1px 2px color-mix(in srgb, var(--foreground) 9%, transparent), 0 7px 18px color-mix(in srgb, var(--foreground) 4%, transparent); }
+.dark { --background: #111411; --foreground: #f2f5ef; --card: #1a1f1a; --card-foreground: #f2f5ef; --muted: #242a24; --muted-foreground: #929b91; --accent: #2a3329; --accent-foreground: #f2f5ef; --border: #303a2f; --input: #303a2f; --ring: #b8f34b; --destructive: #ee929b; --popover: #1a1f1a; --popover-foreground: #f2f5ef; --sidebar: #0c0f0c; --sidebar-foreground: #eef2ea; --sidebar-accent: #1b241b; --sidebar-border: #283226; --status-info: #8db5f0; --status-warning: #efba6c; --status-danger: #ee929b; --status-success: #b8f34b; --chart-income: var(--status-success); --chart-expense: #c4a6ef; --health-track: #3b4738; --radius: 1rem; --radius-md: 0.75rem; --card-radius: 1rem; --card-shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 22px rgb(0 0 0 / 18%); }
+@theme inline { --color-background: var(--background); --color-foreground: var(--foreground); --color-card: var(--card); --color-card-foreground: var(--card-foreground); --color-primary: var(--primary); --color-primary-foreground: var(--primary-foreground); --color-muted: var(--muted); --color-muted-foreground: var(--muted-foreground); --color-accent: var(--accent); --color-accent-foreground: var(--accent-foreground); --color-border: var(--border); --color-input: var(--input); --color-ring: var(--ring); --color-destructive: var(--destructive); --color-popover: var(--popover); --color-popover-foreground: var(--popover-foreground); --color-sidebar: var(--sidebar); --color-sidebar-foreground: var(--sidebar-foreground); --color-sidebar-accent: var(--sidebar-accent); --color-sidebar-border: var(--sidebar-border); --color-status-info: var(--status-info); --color-status-warning: var(--status-warning); --color-status-danger: var(--status-danger); --color-status-success: var(--status-success); --color-violet-400: var(--status-info); --color-orange-400: var(--status-warning); --color-red-300: var(--status-danger); --font-sans: var(--font-body); --font-display: var(--font-display); }
 * { border-color: var(--border); }
 .finansee-icon, [data-icon] { width: var(--icon-size); height: var(--icon-size); flex: none; }
+.mobile-menu-trigger { background-color: var(--card); color: var(--foreground); border-color: var(--border); opacity: 1; box-shadow: 0 6px 18px color-mix(in srgb, var(--foreground) 10%, transparent); }
+aside.fixed.inset-y-0.left-0 { scrollbar-width: none; }
+aside.fixed.inset-y-0.left-0::-webkit-scrollbar { display: none; }
+aside button[aria-label="Fechar menu"], aside button[aria-label="Fechar menu"]:hover { background-color: var(--sidebar-accent) !important; color: var(--sidebar-foreground) !important; border-color: var(--sidebar-border) !important; }
+:root, .dark { --chart-expense: var(--status-info); }
 html { background: var(--background); }
 body { background: var(--background); color: var(--foreground); font-family: var(--font-body), sans-serif; }
+.balance-card { isolation: auto; }
+.balance-card-action { position: absolute; right: 0; bottom: 0; display: flex; align-items: flex-end; padding: 0.5rem 0.5rem 0 0.75rem; border-radius: 1.25rem 0 0 0; background: var(--background); }
+.balance-card-action::before, .balance-card-action::after { content: ""; position: absolute; width: 1.25rem; height: 1.25rem; background: transparent; pointer-events: none; }
+.balance-card-action::before { left: -1.25rem; bottom: 0; border-bottom-right-radius: 1.25rem; box-shadow: 0 1.25rem 0 0 var(--background); }
+.balance-card-action::after { right: 0; top: -1.25rem; border-bottom-right-radius: 1.25rem; box-shadow: 1.25rem 1.25rem 0 0 var(--background); }
+.balance-action-button { min-height: 2.75rem; border-radius: 0.875rem; background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+.balance-action-button:hover { background: color-mix(in srgb, var(--primary) 88%, var(--foreground)); color: var(--primary-foreground); }
+.balance-mode-toggle:hover .finansee-icon { color: var(--primary-foreground); }
+select.finansee-select { color: var(--foreground); color-scheme: light; }
+select.finansee-select option { background: var(--card); color: var(--card-foreground); padding: 0.75rem 1rem; }
+.dark select.finansee-select { color-scheme: dark; }
+[data-slot="input"] { min-height: 3rem; border-radius: 0.75rem; }
+[data-slot="label"] { min-height: 1.25rem; line-height: 1.25rem; }
+aside [data-slot="select-trigger"] { min-height: 60px; }
+.scope-account-card { position: relative; }
+div.rounded-2xl.bg-muted.p-4 { position: relative; }
+div[style*="conic-gradient"] { animation: health-ring-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both; transform-origin: center; }
+@keyframes health-ring-in { from { opacity: 0; transform: scale(0.78) rotate(-18deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
 ::selection { background: var(--primary); color: var(--primary-foreground); }
+
+/* Paletas de usuário: todos os componentes continuam consumindo tokens semânticos. */
+[data-theme="black-white"].dark {
+  --background: #080808; --foreground: #f4f4f4; --card: #121212; --card-foreground: #f4f4f4;
+  --primary: #f4f4f4; --primary-foreground: #080808; --muted: #1d1d1d; --muted-foreground: #b7b7b7;
+  --accent: #282828; --accent-foreground: #ffffff; --border: #343434; --input: #343434; --ring: #ffffff;
+  --destructive: #ff8a8a; --popover: #151515; --popover-foreground: #f4f4f4; --sidebar: #050505; --sidebar-foreground: #f4f4f4; --sidebar-accent: #202020; --sidebar-border: #2c2c2c;
+  --status-info: #a8c7ff; --status-warning: #f4c66d; --status-danger: #ff8a8a; --status-success: #c5f477; --chart-income: #c5f477; --chart-expense: #b9b9b9;
+}
+[data-theme="black-red"].dark {
+  --background: #0b0b0c; --foreground: #f7f7f7; --card: #151416; --card-foreground: #f7f7f7;
+  --primary: #ff5c69; --primary-foreground: #1c080b; --muted: #211a1c; --muted-foreground: #bcaeb0;
+  --accent: #342125; --accent-foreground: #ffffff; --border: #473034; --input: #473034; --ring: #ff7b85;
+  --destructive: #ff8f98; --popover: #181315; --popover-foreground: #f7f7f7; --sidebar: #080708; --sidebar-foreground: #f7f7f7; --sidebar-accent: #28191d; --sidebar-border: #3d272b;
+  --status-info: #8db8ff; --status-warning: #f3c16b; --status-danger: #ff8f98; --status-success: #8fdf9e; --chart-income: #8fdf9e; --chart-expense: #c4a6ef;
+}
+[data-theme="white-black"].dark {
+  --background: #fbfbfa; --foreground: #151515; --card: #ffffff; --card-foreground: #151515;
+  --primary: #151515; --primary-foreground: #ffffff; --muted: #eeeeec; --muted-foreground: #626262;
+  --accent: #e4e4e1; --accent-foreground: #151515; --border: #d7d7d3; --input: #d7d7d3; --ring: #151515;
+  --destructive: #b4232d; --popover: #ffffff; --popover-foreground: #151515; --sidebar: #151515; --sidebar-foreground: #ffffff; --sidebar-accent: #2f2f2f; --sidebar-border: #414141;
+  --status-info: #2b68b8; --status-warning: #9a6100; --status-danger: #b4232d; --status-success: #327a42; --chart-income: #327a42; --chart-expense: #7652c8;
+}
+[data-theme="black-green"].dark {
+  --background: #08110d; --foreground: #edf8ef; --card: #101c15; --card-foreground: #edf8ef;
+  --primary: #56d364; --primary-foreground: #07100a; --muted: #17251c; --muted-foreground: #a9c0ae;
+  --accent: #203629; --accent-foreground: #edf8ef; --border: #2b4934; --input: #2b4934; --ring: #56d364;
+  --destructive: #ff8b8b; --popover: #122018; --popover-foreground: #edf8ef; --sidebar: #050b07; --sidebar-foreground: #edf8ef; --sidebar-accent: #18301e; --sidebar-border: #24432c;
+  --status-info: #8db8ff; --status-warning: #f0c66e; --status-danger: #ff8b8b; --status-success: #56d364; --chart-income: #56d364; --chart-expense: #c4a6ef;
+}
+[data-theme="black-blue"].dark {
+  --background: #080d17; --foreground: #eef5ff; --card: #101827; --card-foreground: #eef5ff;
+  --primary: #5ba7ff; --primary-foreground: #06111f; --muted: #172234; --muted-foreground: #aebdd0;
+  --accent: #223a59; --accent-foreground: #eef5ff; --border: #2e496d; --input: #2e496d; --ring: #76b8ff;
+  --destructive: #ff8b98; --popover: #111d30; --popover-foreground: #eef5ff; --sidebar: #050912; --sidebar-foreground: #eef5ff; --sidebar-accent: #172b47; --sidebar-border: #284363;
+  --status-info: #5ba7ff; --status-warning: #f2c66f; --status-danger: #ff8b98; --status-success: #68d391; --chart-income: #68d391; --chart-expense: #c4a6ef;
+}
+[data-theme="black-white"]:not(.dark) { --background: #f4f4f4; --foreground: #101010; --card: #ffffff; --card-foreground: #101010; --primary: #101010; --primary-foreground: #ffffff; --muted: #e9e9e9; --muted-foreground: #5f5f5f; --accent: #dddddd; --accent-foreground: #101010; --border: #cfcfcf; --input: #cfcfcf; --ring: #101010; --destructive: #b4232d; --popover: #ffffff; --popover-foreground: #101010; --sidebar: #171717; --sidebar-foreground: #ffffff; --sidebar-accent: #303030; --sidebar-border: #454545; --status-info: #2864b2; --status-warning: #9a6100; --status-danger: #b4232d; --status-success: #327a42; --chart-income: #327a42; --chart-expense: #626262; }
+[data-theme="black-red"]:not(.dark) { --background: #fff8f8; --foreground: #210b0e; --card: #ffffff; --card-foreground: #210b0e; --primary: #d93647; --primary-foreground: #ffffff; --muted: #f7e6e8; --muted-foreground: #785e62; --accent: #f1d4d8; --accent-foreground: #210b0e; --border: #e5c1c7; --input: #e5c1c7; --ring: #d93647; --destructive: #b4232d; --popover: #ffffff; --popover-foreground: #210b0e; --sidebar: #2a0e12; --sidebar-foreground: #ffffff; --sidebar-accent: #491b22; --sidebar-border: #63303a; --status-info: #2864b2; --status-warning: #9a6100; --status-danger: #b4232d; --status-success: #327a42; --chart-income: #327a42; --chart-expense: #7652c8; }
+[data-theme="white-black"]:not(.dark) { --background: #fbfbfa; --foreground: #151515; --card: #ffffff; --card-foreground: #151515; --primary: #151515; --primary-foreground: #ffffff; --muted: #eeeeec; --muted-foreground: #626262; --accent: #e4e4e1; --accent-foreground: #151515; --border: #d7d7d3; --input: #d7d7d3; --ring: #151515; --destructive: #b4232d; --popover: #ffffff; --popover-foreground: #151515; --sidebar: #151515; --sidebar-foreground: #ffffff; --sidebar-accent: #2f2f2f; --sidebar-border: #414141; --status-info: #2b68b8; --status-warning: #9a6100; --status-danger: #b4232d; --status-success: #327a42; --chart-income: #327a42; --chart-expense: #7652c8; }
+[data-theme="black-green"]:not(.dark) { --background: #f3faf4; --foreground: #0b1b10; --card: #ffffff; --card-foreground: #0b1b10; --primary: #218739; --primary-foreground: #ffffff; --muted: #e2f0e5; --muted-foreground: #5b7461; --accent: #cfe6d4; --accent-foreground: #0b1b10; --border: #b8d7bf; --input: #b8d7bf; --ring: #218739; --destructive: #b4232d; --popover: #ffffff; --popover-foreground: #0b1b10; --sidebar: #12351b; --sidebar-foreground: #ffffff; --sidebar-accent: #24582f; --sidebar-border: #397146; --status-info: #2864b2; --status-warning: #9a6100; --status-danger: #b4232d; --status-success: #218739; --chart-income: #218739; --chart-expense: #7652c8; }
+[data-theme="black-blue"]:not(.dark) { --background: #f3f7fd; --foreground: #0b1728; --card: #ffffff; --card-foreground: #0b1728; --primary: #1769b0; --primary-foreground: #ffffff; --muted: #e2ebf7; --muted-foreground: #5b6d82; --accent: #d0e0f2; --accent-foreground: #0b1728; --border: #b9cde3; --input: #b9cde3; --ring: #1769b0; --destructive: #b4232d; --popover: #ffffff; --popover-foreground: #0b1728; --sidebar: #0d2948; --sidebar-foreground: #ffffff; --sidebar-accent: #184a78; --sidebar-border: #2d5f8f; --status-info: #1769b0; --status-warning: #9a6100; --status-danger: #b4232d; --status-success: #218739; --chart-income: #218739; --chart-expense: #7652c8; }
