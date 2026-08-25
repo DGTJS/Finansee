@@ -159,7 +159,8 @@ export function InviteAccountSection({ spaceId, canInvite }: { spaceId: string; 
         <CardDescription>Crie um convite pessoal, protegido por token e válido por sete dias.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form className="grid gap-5" onSubmit={(event) => { event.preventDefault(); submit(new FormData(event.currentTarget)); }}>
+        <div className="grid gap-5">
+          <form className="grid gap-5" onSubmit={(event) => { event.preventDefault(); submit(new FormData(event.currentTarget)); }}>
           <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_14rem]">
             <Field data-disabled={!canInvite}>
               <FieldLabel htmlFor="invite-email">E-mail da pessoa</FieldLabel>
@@ -189,6 +190,7 @@ export function InviteAccountSection({ spaceId, canInvite }: { spaceId: string; 
             </div>
           )}
           {message && <p className="text-sm text-muted-foreground" role="status">{message}</p>}
+          </form>
           <div className="grid gap-4 border-t border-border pt-5">
             <div>
               <p className="font-medium">Criar participante diretamente</p>
@@ -207,7 +209,7 @@ export function InviteAccountSection({ spaceId, canInvite }: { spaceId: string; 
               {participantMessage && <p className="text-sm text-muted-foreground" role="status">{participantMessage}</p>}
             </form>
           </div>
-        </form>
+        </div>
       </CardContent>
     </Card>
   );
