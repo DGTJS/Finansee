@@ -5,7 +5,6 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 import { CashflowChart } from "@/components/dashboard/chart";
 import { BalanceCard } from "@/components/dashboard/balance-card";
 import { EconomicCalendar } from "@/components/ui/economic-calendar";
-import { ProfileMenu } from "@/components/dashboard/profile-menu";
 import { DashboardNavbar } from "@/components/dashboard/dashboard-navbar";
 import { MonthSelector } from "@/components/dashboard/month-selector";
 import { MetricCard } from "@/components/dashboard/metric-card";
@@ -28,7 +27,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
   const dateLabel = new Intl.DateTimeFormat("pt-BR", { dateStyle: "full", timeZone: "America/Sao_Paulo" }).format(now);
   const hour = Number(new Intl.DateTimeFormat("pt-BR", { hour: "numeric", hour12: false, timeZone: "America/Sao_Paulo" }).format(now));
   const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
-  return <div className="min-h-screen bg-background"><Sidebar /><DashboardNavbar /><main className="min-h-screen lg:pl-64"><div className="mx-auto max-w-[1500px] px-5 pb-12 pt-20 sm:px-8 lg:px-10 lg:pt-24"><div className="fixed right-5 top-4 z-50 lg:hidden"><ProfileMenu /></div>
+  return <div className="min-h-screen bg-background"><Sidebar /><DashboardNavbar /><main className="min-h-screen lg:pl-64"><div className="mx-auto max-w-[1500px] px-5 pb-12 pt-20 sm:px-8 lg:px-10 lg:pt-24">
     <header className="relative grid gap-6 border-b border-border pb-7 xl:grid-cols-[0.8fr_1.2fr] xl:items-stretch"><div className="flex flex-col justify-center pr-20 sm:pr-0"><p className="text-sm text-muted-foreground">{dateLabel}</p><h1 className="mt-2 font-display text-3xl font-semibold tracking-tight sm:text-4xl">{greeting}, {displayName}<GreetingVisual night={hour >= 18 || hour < 6} /></h1><p className="mt-2 max-w-lg text-sm text-muted-foreground">Aqui está o seu panorama financeiro para manter o mês sob controle.</p></div><BalanceCard key={spaceId} balanceCents={data.balance} forecastCents={data.forecast} combinedBalanceCents={combinedData.balance} combinedForecastCents={combinedData.forecast} initialMode={spaceId === "combined-space" ? "combined" : "individual"} allowModeToggle={spaceId !== "combined-space"} spaceId={spaceId} accounts={transactionOptions.accounts} categories={transactionOptions.categories} /></header>
     <EconomicCalendar title="Contas e cartões" accounts={data.accounts.filter((account) => account.type === "credit_card").map((account, index) => ({ id: account.id, name: account.name, type: "Cartão de crédito", debtCents: Math.abs(account.balanceCents), dueDay: account.dueDay, tone: index % 2 === 0 ? "purple" as const : "red" as const, ownerInitials: account.ownerInitials, ownerName: account.ownerName, ownerImage: account.ownerImage }))} fixedBills={data.fixedBills} />
     <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="font-display text-lg font-semibold">Visão de {new Intl.DateTimeFormat("pt-BR", { month: "long" }).format(new Date(`${month}-01T12:00:00`))}</h2><p className="text-sm text-muted-foreground">Acompanhe o que já aconteceu e o que vem pela frente.</p></div><MonthSelector value={month} /></div>
