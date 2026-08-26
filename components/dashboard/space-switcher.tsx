@@ -32,7 +32,7 @@ export function SpaceSwitcher({ spaces }: { spaces: AvailableSpace[] }) {
     <SelectTrigger aria-label="Trocar conta ou espaço" className="h-auto min-h-[60px] w-full rounded-xl border-sidebar-border bg-sidebar-accent p-3 text-sidebar-foreground shadow-none">
       <SelectValue><SpaceSummary space={selected} /></SelectValue>
     </SelectTrigger>
-    <SelectContent className="min-w-60 p-2">
+    <SelectContent className="z-[100] min-w-60 p-2">
       {spaces.map((space) => <SelectItem key={space.value} value={space.value} className="rounded-xl p-3"><SpaceSummary space={space} selected={space.value === value} /></SelectItem>)}
     </SelectContent>
   </Select>;
