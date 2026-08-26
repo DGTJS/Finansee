@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test:domain": "tsx tests/domain-rules.test.ts",
     "test:open-finance": "tsx tests/pluggy.test.ts",
+    "pluggy:auth": "tsx scripts/pluggy-auth.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx db/seed.ts",
