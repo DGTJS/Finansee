@@ -1,4 +1,6 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+
+dotenv.config({ path: ".env.local" });
 
 const baseUrl = process.env.PLUGGY_BASE_URL ?? "https://api.pluggy.ai";
 const clientId = process.env.PLUGGY_CLIENT_ID;
