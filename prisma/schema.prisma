@@ -8,23 +8,24 @@ datasource db {
 }
 
 model User {
-  id            String            @id
-  name          String
-  email         String            @unique
-  emailVerified Boolean           @default(false) @map("email_verified")
-  image         String?
-  createdAt     DateTime          @default(now()) @map("created_at")
-  updatedAt     DateTime          @default(now()) @map("updated_at")
-  sessions      Session[]
-  accounts      Account[]
-  spacesOwned   FinancialSpace[]  @relation("SpaceOwner")
-  memberships   SpaceMember[]
-  accountsOwned FinancialAccount[] @relation("AccountOwner")
-  incomeProfiles IncomeProfile[]
-  invitations   SpaceInvitation[] @relation("InvitationSender")
-  createdTransactions Transaction[] @relation("TransactionCreator")
-  updatedTransactions Transaction[] @relation("TransactionUpdater")
-  cancelledTransactions Transaction[] @relation("TransactionCanceller")
+  id                    String             @id
+  name                  String
+  email                 String             @unique
+  emailVerified         Boolean            @default(false) @map("email_verified")
+  image                 String?
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @default(now()) @map("updated_at")
+  sessions              Session[]
+  accounts              Account[]
+  spacesOwned           FinancialSpace[]   @relation("SpaceOwner")
+  memberships           SpaceMember[]
+  accountsOwned         FinancialAccount[] @relation("AccountOwner")
+  incomeProfiles        IncomeProfile[]
+  invitations           SpaceInvitation[]  @relation("InvitationSender")
+  createdTransactions   Transaction[]      @relation("TransactionCreator")
+  updatedTransactions   Transaction[]      @relation("TransactionUpdater")
+  cancelledTransactions Transaction[]      @relation("TransactionCanceller")
+  bankConnections       BankConnection[]
 
   @@map("user")
 }
@@ -44,20 +45,20 @@ model Session {
 }
 
 model Account {
-  id                    String   @id
-  accountId             String   @map("account_id")
-  providerId            String   @map("provider_id")
-  userId                String   @map("user_id")
-  accessToken           String?  @map("access_token")
-  refreshToken          String?  @map("refresh_token")
-  idToken               String?  @map("id_token")
+  id                    String    @id
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
   accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
   refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
   scope                 String?
   password              String?
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @default(now()) @map("updated_at")
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @default(now()) @map("updated_at")
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("account")
 }
@@ -74,245 +75,300 @@ model Verification {
 }
 
 model FinancialSpace {
-  id          String        @id
-  name        String
-  ownerId     String        @map("owner_id")
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @default(now()) @map("updated_at")
-  owner       User          @relation("SpaceOwner", fields: [ownerId], references: [id])
-  members     SpaceMember[]
-  accounts    FinancialAccount[]
-  categories  Category[]
-  transactions Transaction[]
-  recurrences Recurrence[]
+  id                String               @id
+  name              String
+  ownerId           String               @map("owner_id")
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @default(now()) @map("updated_at")
+  owner             User                 @relation("SpaceOwner", fields: [ownerId], references: [id])
+  members           SpaceMember[]
+  accounts          FinancialAccount[]
+  categories        Category[]
+  transactions      Transaction[]
+  recurrences       Recurrence[]
   installmentGroups InstallmentGroup[]
-  budgets     Budget[]
-  goals       Goal[]
-  alerts      Alert[]
-  investments InvestmentPosition[]
-  incomeProfiles IncomeProfile[]
-  invitations SpaceInvitation[]
+  budgets           Budget[]
+  goals             Goal[]
+  alerts            Alert[]
+  investments       InvestmentPosition[]
+  incomeProfiles    IncomeProfile[]
+  invitations       SpaceInvitation[]
+  bankConnections   BankConnection[]
 
   @@map("financial_space")
 }
 
 model SpaceMember {
-  id              String          @id
+  id               String         @id
   financialSpaceId String         @map("financial_space_id")
-  userId          String          @map("user_id")
-  role            String          @default("owner")
-  status          String          @default("active")
-  permissions     Json            @default("{}")
-  createdAt       DateTime        @default(now()) @map("created_at")
-  updatedAt       DateTime        @default(now()) @map("updated_at")
-  space           FinancialSpace  @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String         @map("user_id")
+  role             String         @default("owner")
+  status           String         @default("active")
+  permissions      Json           @default("{}")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @default(now()) @map("updated_at")
+  space            FinancialSpace @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([financialSpaceId, userId])
   @@map("space_member")
 }
 
 model SpaceInvitation {
-  id              String         @id
-  financialSpaceId String        @map("financial_space_id")
-  email           String
-  role            String         @default("member")
-  tokenHash       String         @unique @map("token_hash")
-  expiresAt       DateTime       @map("expires_at")
-  acceptedAt      DateTime?      @map("accepted_at")
-  invitedBy       String         @map("invited_by")
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @default(now()) @map("updated_at")
-  space           FinancialSpace @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
-  inviter         User           @relation("InvitationSender", fields: [invitedBy], references: [id])
+  id               String         @id
+  financialSpaceId String         @map("financial_space_id")
+  email            String
+  role             String         @default("member")
+  tokenHash        String         @unique @map("token_hash")
+  expiresAt        DateTime       @map("expires_at")
+  acceptedAt       DateTime?      @map("accepted_at")
+  invitedBy        String         @map("invited_by")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @default(now()) @map("updated_at")
+  space            FinancialSpace @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
+  inviter          User           @relation("InvitationSender", fields: [invitedBy], references: [id])
 
   @@map("space_invitation")
 }
 
 model FinancialAccount {
-  id              String         @id
-  financialSpaceId String        @map("financial_space_id")
-  ownerUserId     String?        @map("owner_user_id")
-  name            String
-  bank            String         @default("Outro")
-  type            String         @default("checking")
-  balanceCents    Int            @default(0) @map("balance_cents")
-  color           String         @default("lime")
-  closingDay      Int?           @map("closing_day")
-  dueDay          Int?           @map("due_day")
-  archivedAt      DateTime?      @map("archived_at")
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @default(now()) @map("updated_at")
-  space           FinancialSpace @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
-  owner           User?          @relation("AccountOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
-  transactions    Transaction[]
-  incomeProfiles  IncomeProfile[]
-  recurrences     Recurrence[]
+  id               String          @id
+  financialSpaceId String          @map("financial_space_id")
+  ownerUserId      String?         @map("owner_user_id")
+  name             String
+  bank             String          @default("Outro")
+  type             String          @default("checking")
+  balanceCents     Int             @default(0) @map("balance_cents")
+  currencyCode     String          @default("BRL") @map("currency_code")
+  color            String          @default("lime")
+  closingDay       Int?            @map("closing_day")
+  dueDay           Int?            @map("due_day")
+  archivedAt       DateTime?       @map("archived_at")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @default(now()) @map("updated_at")
+  space            FinancialSpace  @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
+  owner            User?           @relation("AccountOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  transactions     Transaction[]
+  incomeProfiles   IncomeProfile[]
+  recurrences      Recurrence[]
+  bankAccounts     BankAccount[]
 
   @@map("financial_account")
 }
 
 model Category {
-  id              String         @id
-  financialSpaceId String        @map("financial_space_id")
-  name            String
-  kind            String         @default("expense")
-  color           String         @default("lime")
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @default(now()) @map("updated_at")
-  space           FinancialSpace @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
-  transactions    Transaction[]
-  budgets         Budget[]
-  recurrences     Recurrence[]
+  id               String         @id
+  financialSpaceId String         @map("financial_space_id")
+  name             String
+  kind             String         @default("expense")
+  color            String         @default("lime")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @default(now()) @map("updated_at")
+  space            FinancialSpace @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
+  transactions     Transaction[]
+  budgets          Budget[]
+  recurrences      Recurrence[]
 
   @@map("category")
 }
 
 model IncomeProfile {
-  id              String           @id
-  financialSpaceId String          @map("financial_space_id")
-  ownerUserId     String           @map("owner_user_id")
-  accountId       String           @map("account_id")
-  name            String
-  kind            String
-  amountCents     Int              @map("amount_cents")
-  paymentDay     Int              @map("payment_day")
-  active          Boolean          @default(true)
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime         @default(now()) @map("updated_at")
-  space           FinancialSpace   @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
-  owner           User             @relation(fields: [ownerUserId], references: [id])
-  account         FinancialAccount @relation(fields: [accountId], references: [id])
+  id               String           @id
+  financialSpaceId String           @map("financial_space_id")
+  ownerUserId      String           @map("owner_user_id")
+  accountId        String           @map("account_id")
+  name             String
+  kind             String
+  amountCents      Int              @map("amount_cents")
+  paymentDay       Int              @map("payment_day")
+  active           Boolean          @default(true)
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @default(now()) @map("updated_at")
+  space            FinancialSpace   @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
+  owner            User             @relation(fields: [ownerUserId], references: [id])
+  account          FinancialAccount @relation(fields: [accountId], references: [id])
 
   @@map("income_profile")
 }
 
 model Recurrence {
-  id              String           @id
-  financialSpaceId String          @map("financial_space_id")
-  accountId       String           @map("account_id")
-  categoryId      String           @map("category_id")
-  description     String
-  source          String?
-  amountCents     Int              @map("amount_cents")
-  kind            String
-  frequency       String
-  startDate       DateTime         @map("start_date") @db.Date
-  endDate         DateTime?        @map("end_date") @db.Date
-  nextDate        DateTime         @map("next_date") @db.Date
-  active          Boolean          @default(true)
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime         @default(now()) @map("updated_at")
-  space           FinancialSpace   @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
-  account         FinancialAccount @relation(fields: [accountId], references: [id])
-  category        Category         @relation(fields: [categoryId], references: [id])
-  transactions    Transaction[]
+  id               String           @id
+  financialSpaceId String           @map("financial_space_id")
+  accountId        String           @map("account_id")
+  categoryId       String           @map("category_id")
+  description      String
+  source           String?
+  amountCents      Int              @map("amount_cents")
+  kind             String
+  frequency        String
+  startDate        DateTime         @map("start_date") @db.Date
+  endDate          DateTime?        @map("end_date") @db.Date
+  nextDate         DateTime         @map("next_date") @db.Date
+  active           Boolean          @default(true)
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @default(now()) @map("updated_at")
+  space            FinancialSpace   @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
+  account          FinancialAccount @relation(fields: [accountId], references: [id])
+  category         Category         @relation(fields: [categoryId], references: [id])
+  transactions     Transaction[]
 
   @@map("recurrence")
 }
 
 model InstallmentGroup {
-  id              String         @id
-  financialSpaceId String        @map("financial_space_id")
-  totalCents      Int            @map("total_cents")
-  installmentCount Int           @map("installment_count")
-  description     String
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @default(now()) @map("updated_at")
-  space           FinancialSpace @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
-  transactions    Transaction[]
+  id               String         @id
+  financialSpaceId String         @map("financial_space_id")
+  totalCents       Int            @map("total_cents")
+  installmentCount Int            @map("installment_count")
+  description      String
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @default(now()) @map("updated_at")
+  space            FinancialSpace @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
+  transactions     Transaction[]
 
   @@map("installment_group")
 }
 
 model Transaction {
-  id                String           @id
-  financialSpaceId  String           @map("financial_space_id")
-  accountId         String           @map("account_id")
-  categoryId        String?          @map("category_id")
-  recurrenceId      String?          @map("recurrence_id")
-  installmentGroupId String?         @map("installment_group_id")
-  transferGroupId   String?          @map("transfer_group_id")
-  installmentNumber Int?             @map("installment_number")
-  installmentCount  Int?             @map("installment_count")
-  description       String
-  source            String?
-  amountCents       Int              @map("amount_cents")
-  kind              String
-  status            String           @default("paid")
-  competenceDate    DateTime         @map("competence_date") @db.Date
-  dueDate           DateTime?        @map("due_date") @db.Date
-  paidAt            DateTime?        @map("paid_at")
-  createdBy         String?          @map("created_by")
-  updatedBy         String?          @map("updated_by")
-  cancelledBy       String?          @map("cancelled_by")
-  createdAt         DateTime         @default(now()) @map("created_at")
-  updatedAt         DateTime         @default(now()) @map("updated_at")
-  space             FinancialSpace   @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
-  account           FinancialAccount @relation(fields: [accountId], references: [id])
-  category          Category?        @relation(fields: [categoryId], references: [id])
-  recurrence        Recurrence?      @relation(fields: [recurrenceId], references: [id])
-  installmentGroup  InstallmentGroup? @relation(fields: [installmentGroupId], references: [id])
-  creator           User?            @relation("TransactionCreator", fields: [createdBy], references: [id], onDelete: SetNull)
-  updater           User?            @relation("TransactionUpdater", fields: [updatedBy], references: [id], onDelete: SetNull)
-  canceller         User?            @relation("TransactionCanceller", fields: [cancelledBy], references: [id], onDelete: SetNull)
+  id                    String            @id
+  financialSpaceId      String            @map("financial_space_id")
+  accountId             String            @map("account_id")
+  categoryId            String?           @map("category_id")
+  recurrenceId          String?           @map("recurrence_id")
+  installmentGroupId    String?           @map("installment_group_id")
+  transferGroupId       String?           @map("transfer_group_id")
+  installmentNumber     Int?              @map("installment_number")
+  installmentCount      Int?              @map("installment_count")
+  description           String
+  source                String?
+  amountCents           Int               @map("amount_cents")
+  kind                  String
+  status                String            @default("paid")
+  competenceDate        DateTime          @map("competence_date") @db.Date
+  dueDate               DateTime?         @map("due_date") @db.Date
+  paidAt                DateTime?         @map("paid_at")
+  createdBy             String?           @map("created_by")
+  updatedBy             String?           @map("updated_by")
+  cancelledBy           String?           @map("cancelled_by")
+  bankAccountId         String?           @map("bank_account_id")
+  externalTransactionId String?           @map("external_transaction_id")
+  merchantName          String?           @map("merchant_name")
+  rawData               Json?             @map("raw_data")
+  createdAt             DateTime          @default(now()) @map("created_at")
+  updatedAt             DateTime          @default(now()) @map("updated_at")
+  space                 FinancialSpace    @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
+  account               FinancialAccount  @relation(fields: [accountId], references: [id])
+  category              Category?         @relation(fields: [categoryId], references: [id])
+  recurrence            Recurrence?       @relation(fields: [recurrenceId], references: [id])
+  installmentGroup      InstallmentGroup? @relation(fields: [installmentGroupId], references: [id])
+  creator               User?             @relation("TransactionCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  updater               User?             @relation("TransactionUpdater", fields: [updatedBy], references: [id], onDelete: SetNull)
+  canceller             User?             @relation("TransactionCanceller", fields: [cancelledBy], references: [id], onDelete: SetNull)
+  bankAccount           BankAccount?      @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
 
   @@unique([recurrenceId, competenceDate], map: "transaction_recurrence_occurrence_unique")
+  @@unique([bankAccountId, externalTransactionId], map: "transaction_external_unique")
   @@map("transaction")
 }
 
+model BankConnection {
+  id               String         @id
+  userId           String         @map("user_id")
+  financialSpaceId String         @map("financial_space_id")
+  provider         String
+  externalItemId   String         @map("external_item_id")
+  connectorName    String         @map("connector_name")
+  connectorLogoUrl String?        @map("connector_logo_url")
+  status           String         @default("ACTIVE")
+  lastSyncedAt     DateTime?      @map("last_synced_at")
+  errorMessage     String?        @map("error_message")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @default(now()) @map("updated_at")
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  space            FinancialSpace @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
+  accounts         BankAccount[]
+
+  @@unique([provider, externalItemId])
+  @@index([userId, financialSpaceId])
+  @@map("bank_connection")
+}
+
+model BankAccount {
+  id                    String            @id
+  connectionId          String            @map("connection_id")
+  financialAccountId    String?           @map("financial_account_id")
+  externalAccountId     String            @map("external_account_id")
+  name                  String
+  type                  String
+  subtype               String?
+  maskedNumber          String?           @map("masked_number")
+  currencyCode          String            @default("BRL") @map("currency_code")
+  currentBalanceCents   Int?              @map("current_balance_cents")
+  availableBalanceCents Int?              @map("available_balance_cents")
+  source                String            @default("OPEN_FINANCE")
+  createdAt             DateTime          @default(now()) @map("created_at")
+  updatedAt             DateTime          @default(now()) @map("updated_at")
+  connection            BankConnection    @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  financialAccount      FinancialAccount? @relation(fields: [financialAccountId], references: [id], onDelete: SetNull)
+  transactions          Transaction[]
+
+  @@unique([connectionId, externalAccountId])
+  @@index([financialAccountId])
+  @@map("bank_account")
+}
+
 model Budget {
-  id              String         @id
-  financialSpaceId String        @map("financial_space_id")
-  categoryId      String         @map("category_id")
-  month           DateTime       @db.Date
-  limitCents      Int            @map("limit_cents")
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @default(now()) @map("updated_at")
-  space           FinancialSpace @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
-  category        Category       @relation(fields: [categoryId], references: [id])
+  id               String         @id
+  financialSpaceId String         @map("financial_space_id")
+  categoryId       String         @map("category_id")
+  month            DateTime       @db.Date
+  limitCents       Int            @map("limit_cents")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @default(now()) @map("updated_at")
+  space            FinancialSpace @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
+  category         Category       @relation(fields: [categoryId], references: [id])
 
   @@map("budget")
 }
 
 model Goal {
-  id              String         @id
-  financialSpaceId String        @map("financial_space_id")
-  name            String
-  targetCents     Int            @map("target_cents")
-  currentCents    Int            @default(0) @map("current_cents")
-  dueDate         DateTime?      @map("due_date") @db.Date
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @default(now()) @map("updated_at")
-  space           FinancialSpace @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
+  id               String         @id
+  financialSpaceId String         @map("financial_space_id")
+  name             String
+  targetCents      Int            @map("target_cents")
+  currentCents     Int            @default(0) @map("current_cents")
+  dueDate          DateTime?      @map("due_date") @db.Date
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @default(now()) @map("updated_at")
+  space            FinancialSpace @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
 
   @@map("goal")
 }
 
 model Alert {
-  id              String         @id
-  financialSpaceId String        @map("financial_space_id")
-  title           String
-  body            String
-  severity        String         @default("info")
-  readAt         DateTime?      @map("read_at")
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @default(now()) @map("updated_at")
-  space           FinancialSpace @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
+  id               String         @id
+  financialSpaceId String         @map("financial_space_id")
+  title            String
+  body             String
+  severity         String         @default("info")
+  readAt           DateTime?      @map("read_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @default(now()) @map("updated_at")
+  space            FinancialSpace @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
 
   @@map("alert")
 }
 
 model InvestmentPosition {
-  id              String         @id
-  financialSpaceId String        @map("financial_space_id")
-  symbol          String
-  quantityMilli   Int            @map("quantity_milli")
-  averagePriceCents Int          @map("average_price_cents")
-  acquiredAt      DateTime       @map("acquired_at") @db.Date
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @default(now()) @map("updated_at")
-  space           FinancialSpace @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
+  id                String         @id
+  financialSpaceId  String         @map("financial_space_id")
+  symbol            String
+  quantityMilli     Int            @map("quantity_milli")
+  averagePriceCents Int            @map("average_price_cents")
+  acquiredAt        DateTime       @map("acquired_at") @db.Date
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @default(now()) @map("updated_at")
+  space             FinancialSpace @relation(fields: [financialSpaceId], references: [id], onDelete: Cascade)
 
   @@map("investment_position")
 }

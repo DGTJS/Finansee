@@ -106,3 +106,10 @@ O `db:seed` cria fixtures locais reproduzíveis para validar o painel, incluindo
 O contexto, regras de domínio, arquitetura e MVP estão em [`docs/`](./docs/). Os prompts de execução ficam em [`prompts/`](./prompts/) e os papéis de engenharia em [`agents/`](./agents/). Os componentes de referência visual foram mantidos em [`prompts/components/`](./prompts/components/) e adaptados ao produto, sem copiar suas demos literalmente.
 
 Desenvolvido por [Diego Martins](https://github.com/DGTJS).
+# Open Finance
+
+O módulo Open Finance conecta instituições pelo Pluggy Connect em modo estritamente somente leitura. Ele importa contas, saldos e transações para o espaço financeiro selecionado, preserva lançamentos manuais e mantém o histórico importado quando uma conexão é removida.
+
+Configure `PLUGGY_CLIENT_ID`, `PLUGGY_CLIENT_SECRET` e, opcionalmente, `PLUGGY_BASE_URL` a partir de `.env.example`. O segredo nunca é enviado ao navegador. As credenciais e a disponibilidade da API dependem do plano contratado diretamente com a Pluggy.
+
+Para executar localmente, instale as dependências, configure `DATABASE_URL`, rode `npm run db:generate` e `npm run dev`. Valide com `npm run lint`, `npm run typecheck`, `npm run test:domain` e `npm run build`.
