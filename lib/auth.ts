@@ -7,8 +7,19 @@ import { passwordSchema } from "@/lib/auth-validation";
 import { APIError } from "better-auth";
 import { prisma } from "@/lib/prisma";
 
+const authBaseUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+const vercelOrigins = [process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL]
+  .filter((value): value is string => Boolean(value))
+  .map((value) => `https://${value}`);
+const trustedOrigins = Array.from(new Set([
+  authBaseUrl,
+  "https://finansee-pi.vercel.app",
+  "https://finansee-dgtjs-projects.vercel.app",
+  ...vercelOrigins,
+]));
+
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
+  baseURL: authBaseUrl,
   secret: process.env.BETTER_AUTH_SECRET ?? "finansee-local-development-secret-change-me",
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   emailAndPassword: { enabled: true, minPasswordLength: 8, maxPasswordLength: 128, sendResetPassword: async ({ user, url }) => deliverResetPassword({ user: { email: user.email, name: user.name }, url }) },
@@ -31,7 +42,7 @@ export const auth = betterAuth({
       if (!result.success) throw APIError.from("BAD_REQUEST", { code: "PASSWORD_TOO_WEAK", message: result.error.issues[0]?.message ?? "Senha inválida." });
     },
   },
-  trustedOrigins: [process.env.BETTER_AUTH_URL ?? "http://localhost:3000"],
+  trustedOrigins,
   databaseHooks: {
     user: {
       create: {
