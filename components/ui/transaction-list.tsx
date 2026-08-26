@@ -56,8 +56,10 @@ type TransactionListProps = {
   footerLabel?: string;
   footerHref?: string;
   onDelete?: (id: string) => Promise<{ success: boolean; message?: string }>;
+  onCancel?: (id: string) => void | Promise<void>;
   onEdit?: (transaction: TransactionListItem) => void;
   deleting?: boolean;
+  cancelling?: boolean;
 };
 const money = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -77,9 +79,13 @@ export function TransactionList({
   footerLabel = "Ver todas",
   footerHref,
   onDelete,
+  onCancel,
   onEdit,
   deleting = false,
+  cancelling = false,
 }: TransactionListProps) {
+  if (!onDelete && onCancel) onDelete = async (id) => { await onCancel(id); return { success: true }; };
+  deleting = deleting || cancelling;
   const [selectedTransaction, setSelectedTransaction] =
     useState<TransactionListItem | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
