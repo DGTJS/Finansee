@@ -26,7 +26,37 @@ function applyTheme(theme: ThemeId, mode: ThemeMode) {
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<ThemeId>("default");
   const [mode, setModeState] = useState<ThemeMode>("light");
-  useEffect(() => { const saved = localStorage.getItem(THEME_STORAGE_KEY); try { const parsed = JSON.parse(saved ?? "null") as { theme?: string; mode?: ThemeMode } | null; const next = isThemeId(parsed?.theme ?? null) ? parsed!.theme as ThemeId : saved === "dark" ? "default" : isThemeId(saved) ? saved : "default"; const nextMode = parsed?.mode === "light" || parsed?.mode === "dark" ? parsed.mode : saved === "dark" || (next !== "default" && next !== "white-black") ? defaultMode(next) : "light"; setThemeState(next); setModeState(nextMode); applyTheme(next, nextMode); } catch { setThemeState("default"); setModeState("light"); applyTheme("default", "light"); } }, []);
+  // Theme preferences are read from browser storage after hydration.
+  useEffect(() => {
+    const saved = localStorage.getItem(THEME_STORAGE_KEY);
+    try {
+      const parsed = JSON.parse(saved ?? "null") as {
+        theme?: string;
+        mode?: ThemeMode;
+      } | null;
+      const next = isThemeId(parsed?.theme ?? null)
+        ? (parsed!.theme as ThemeId)
+        : saved === "dark"
+          ? "default"
+          : isThemeId(saved)
+            ? saved
+            : "default";
+      const nextMode =
+        parsed?.mode === "light" || parsed?.mode === "dark"
+          ? parsed.mode
+          : saved === "dark" || (next !== "default" && next !== "white-black")
+            ? defaultMode(next)
+            : "light";
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setThemeState(next);
+      setModeState(nextMode);
+      applyTheme(next, nextMode);
+    } catch {
+      setThemeState("default");
+      setModeState("light");
+      applyTheme("default", "light");
+    }
+  }, []);
   const persist = useCallback((nextTheme: ThemeId, nextMode: ThemeMode) => { setThemeState(nextTheme); setModeState(nextMode); localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify({ theme: nextTheme, mode: nextMode })); applyTheme(nextTheme, nextMode); }, []);
   const setTheme = useCallback((next: ThemeId) => persist(next, mode), [mode, persist]);
   const setMode = useCallback((next: ThemeMode) => persist(theme, next), [persist, theme]);

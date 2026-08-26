@@ -84,8 +84,13 @@ export function TransactionList({
   deleting = false,
   cancelling = false,
 }: TransactionListProps) {
-  if (!onDelete && onCancel) onDelete = async (id) => { await onCancel(id); return { success: true }; };
-  deleting = deleting || cancelling;
+  const effectiveOnDelete = onDelete ?? (onCancel
+    ? async (id: string) => {
+        await onCancel(id);
+        return { success: true };
+      }
+    : undefined);
+  const isDeleting = deleting || cancelling;
   const [selectedTransaction, setSelectedTransaction] =
     useState<TransactionListItem | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -198,11 +203,11 @@ export function TransactionList({
                           {transaction.amount >= 0 ? "+" : "−"}
                           {money.format(Math.abs(transaction.amount))}
                         </motion.span>
-                        {onDelete && (
+                        {effectiveOnDelete && (
                           <button
                             type="button"
                             aria-label={`Excluir ${transaction.name}`}
-                            disabled={deleting}
+                            disabled={isDeleting}
                             className="grid size-11 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             onClick={(event) => {
                               event.stopPropagation();
@@ -356,11 +361,11 @@ export function TransactionList({
                     </p>
                   )}
                 </div>
-                {onDelete && (
+                {effectiveOnDelete && (
                   <div className="rounded-2xl border border-status-danger/30 bg-status-danger/5 p-4">
                     <button
                       type="button"
-                      disabled={deleting}
+                      disabled={isDeleting}
                       className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-status-danger px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                       onClick={() => {
                         setDeleteMessage("");
@@ -368,7 +373,7 @@ export function TransactionList({
                       }}
                     >
                       <Trash2 className="size-4" />
-                      {deleting ? "Excluindo..." : "Excluir permanentemente"}
+                      {isDeleting ? "Excluindo..." : "Excluir permanentemente"}
                     </button>
                     {deleteMessage && (
                       <p
@@ -398,7 +403,7 @@ export function TransactionList({
           )}
         </AnimatePresence>
       </motion.div>
-      {onDelete && selectedTransaction && (
+      {effectiveOnDelete && selectedTransaction && (
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -408,13 +413,13 @@ export function TransactionList({
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+              <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
               <AlertDialogAction
                 type="button"
                 className="bg-status-danger text-white hover:bg-status-danger/90"
-                disabled={deleting}
+                disabled={isDeleting}
                 onClick={async () => {
-                  const result = await onDelete(selectedTransaction.id);
+                  const result = await effectiveOnDelete(selectedTransaction.id);
                   if (result.success) {
                     setDeleteDialogOpen(false);
                     setSelectedTransaction(null);
@@ -424,7 +429,7 @@ export function TransactionList({
                   }
                 }}
               >
-                {deleting ? "Excluindo..." : "Excluir movimentação"}
+                {isDeleting ? "Excluindo..." : "Excluir movimentação"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

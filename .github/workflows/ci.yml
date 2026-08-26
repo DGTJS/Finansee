@@ -36,7 +36,14 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma Client
+        env:
+          DATABASE_URL: postgresql://localhost:5432/finansee
         run: npx prisma generate
+
+      - name: Validate Prisma schema
+        env:
+          DATABASE_URL: postgresql://localhost:5432/finansee
+        run: npx prisma validate
 
       - name: Lint
         run: npm run lint
@@ -46,6 +53,9 @@ jobs:
 
       - name: Domain tests
         run: npm run test:domain
+
+      - name: Open Finance tests
+        run: npm run test:open-finance
 
       - name: Production build
         run: npm run build
