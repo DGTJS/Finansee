@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Check, Settings2, Trash2, Users } from "@/components/icons";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ function buildMemberForm(spaceId: string, member: Member, role: string, status: 
 
 export function MemberManagement({ spaceId, members, canManageMembers, onAddMember }: { spaceId: string; members: Member[]; canManageMembers: boolean; onAddMember: () => void }) {
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
   const [message, setMessage] = useState("");
   const [editing, setEditing] = useState<Member | null>(null);
 
@@ -46,6 +48,7 @@ export function MemberManagement({ spaceId, members, canManageMembers, onAddMemb
       setMessage(result.message ?? "");
       if (result.success) {
         toast.success(result.message ?? "Membro atualizado.");
+        router.refresh();
         afterSave?.();
       } else {
         toast.error(result.message ?? "Não foi possível atualizar o membro.");
