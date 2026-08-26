@@ -27,19 +27,25 @@ export async function getAvailableSpaces(): Promise<AvailableSpace[]> {
   const context = await getAuthContext();
   if (!context) return [];
   const memberships = await prisma.spaceMember.findMany({ where: { userId: context.user.id, status: "active" }, select: { financialSpaceId: true, role: true }, orderBy: { createdAt: "asc" } });
-  const spaces = await prisma.financialSpace.findMany({ where: { id: { in: memberships.map(({ financialSpaceId }) => financialSpaceId) } }, include: { members: { where: { status: "active" }, include: { user: { select: { id: true, name: true, image: true } } } } } });
+  const directSpaceIds = memberships.map(({ financialSpaceId }) => financialSpaceId);
+  const directSpaces = await prisma.financialSpace.findMany({ where: { id: { in: directSpaceIds } }, include: { members: { where: { status: "active" }, include: { user: { select: { id: true, name: true, image: true } } } } } });
+  const sharedParticipantIds = Array.from(new Set(directSpaces.filter((space) => space.members.length > 1).flatMap((space) => space.members.map(({ user }) => user.id))));
+  const linkedPersonalSpaces = sharedParticipantIds.length ? await prisma.financialSpace.findMany({ where: { ownerId: { in: sharedParticipantIds } }, include: { members: { where: { status: "active" }, include: { user: { select: { id: true, name: true, image: true } } } } } }) : [];
+  const linkedPersonal = linkedPersonalSpaces.filter((space) => space.members.length === 1 && space.members[0]?.user.id === space.ownerId);
+  const spaces = Array.from(new Map([...directSpaces, ...linkedPersonal].map((space) => [space.id, space])).values());
+  const roleBySpace = new Map(memberships.map(({ financialSpaceId, role }) => [financialSpaceId, role]));
 
-  return memberships.flatMap(({ financialSpaceId, role }) => {
-    const space = spaces.find(({ id }) => id === financialSpaceId);
-    if (!space) return [];
+  return spaces.flatMap((space) => {
     const rows = space.members;
+    if (!rows.length) return [];
     const names = Array.from(new Set(rows.map(({ user }) => user.name.trim()).filter(Boolean)));
     const firstNames = names.map((name) => name.split(/\s+/)[0]);
-    const current = rows.find(({ user }) => user.id === context.user.id);
+    const owner = rows.find(({ user }) => user.id === space.ownerId)?.user;
     const isJoint = rows.length > 1;
     const name = isJoint ? firstNames.slice(0, 2).join(" & ") : firstNames[0] ?? space.name;
     const initials = isJoint ? firstNames.slice(0, 2).map((item) => item[0]).join("").toUpperCase() : (firstNames[0]?.slice(0, 2) ?? "F").toUpperCase();
-    const description = isJoint ? "Conta conjunta" : ["owner", "admin"].includes(role) ? "Conta do administrador" : "Conta convidado";
-    return [{ value: space.id, initials, name, description, image: current?.user.image ?? null, role }];
-  });
+    const role = roleBySpace.get(space.id) ?? "viewer";
+    const description = isJoint ? "Conta conjunta" : owner?.id === context.user.id ? "Conta do administrador" : "Conta individual";
+    return [{ value: space.id, initials, name, description, image: owner?.image ?? null, role }];
+  }).sort((left, right) => Number(left.description === "Conta conjunta") - Number(right.description === "Conta conjunta"));
 }

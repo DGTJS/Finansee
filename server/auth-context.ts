@@ -22,8 +22,15 @@ export async function requireSpaceAccess(spaceId: string, permission: SpacePermi
   if (!context) throw new Error("AUTH_REQUIRED");
   const key = await getHeaderClientKey(`space:${spaceId}`, context.user.id);
   const membership = await withRequestLimit(key, () => prisma.spaceMember.findFirst({ where: { financialSpaceId: spaceId, userId: context.user.id, status: "active" } }), { limit: 120, windowMs: 60_000, concurrency: 12, timeoutMs: 5_000 });
-  if (!membership || !canAccess(membership.role, permission, membership.permissions as Record<string, boolean>)) throw new Error("FORBIDDEN");
-  return membership;
+  if (membership && canAccess(membership.role, permission, membership.permissions as Record<string, boolean>)) return membership;
+  if (permission !== "read") throw new Error("FORBIDDEN");
+  const sharedSpaces = await prisma.financialSpace.findMany({ where: { members: { some: { userId: context.user.id, status: "active" } } }, select: { members: { where: { status: "active" }, select: { userId: true } } } });
+  const participantIds = Array.from(new Set(sharedSpaces.filter((space) => space.members.length > 1).flatMap((space) => space.members.map(({ userId }) => userId))));
+  if (!participantIds.length) throw new Error("FORBIDDEN");
+  const linkedPersonal = await prisma.financialSpace.findMany({ where: { id: spaceId, ownerId: { in: participantIds } }, include: { members: { where: { status: "active" }, select: { userId: true } } } });
+  const personal = linkedPersonal.find((space) => space.members.length === 1 && space.members[0]?.userId === space.ownerId);
+  if (!personal) throw new Error("FORBIDDEN");
+  return { id: `linked:${personal.id}`, financialSpaceId: personal.id, userId: context.user.id, role: "viewer", status: "active", permissions: { read: true }, createdAt: new Date(), updatedAt: new Date() } as NonNullable<Membership>;
 }
 
 function canAccess(role: string, permission: SpacePermission, overrides: Record<string, boolean> = {}) {
