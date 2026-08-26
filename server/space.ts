@@ -4,7 +4,7 @@ import { getAuthContext } from "@/server/auth-context";
 
 export const demoSpaces = ["personal-space", "raissa-space", "combined-space"] as const;
 export type DemoSpaceId = (typeof demoSpaces)[number];
-export type AvailableSpace = { value: string; initials: string; name: string; description: string; image: string | null };
+export type AvailableSpace = { value: string; initials: string; name: string; description: string; image: string | null; role: string };
 export function normalizeSpaceId(value?: string): DemoSpaceId { return demoSpaces.includes(value as DemoSpaceId) ? value as DemoSpaceId : "personal-space"; }
 
 export async function resolveSpaceId(value?: string) {
@@ -26,7 +26,20 @@ export async function getSpaceDisplayName(spaceId: string) {
 export async function getAvailableSpaces(): Promise<AvailableSpace[]> {
   const context = await getAuthContext();
   if (!context) return [];
-  const memberships = await prisma.spaceMember.findMany({ where: { userId: context.user.id, status: "active" }, select: { financialSpaceId: true } });
+  const memberships = await prisma.spaceMember.findMany({ where: { userId: context.user.id, status: "active" }, select: { financialSpaceId: true, role: true }, orderBy: { createdAt: "asc" } });
   const spaces = await prisma.financialSpace.findMany({ where: { id: { in: memberships.map(({ financialSpaceId }) => financialSpaceId) } }, include: { members: { where: { status: "active" }, include: { user: { select: { id: true, name: true, image: true } } } } } });
-  return memberships.flatMap(({ financialSpaceId }) => { const space = spaces.find(({ id }) => id === financialSpaceId); if (!space) return []; const rows = space.members; const names = Array.from(new Set(rows.map(({ user }) => user.name.trim()).filter(Boolean))); const firstNames = names.map((name) => name.split(/\s+/)[0]); const name = names.length > 1 ? firstNames.slice(0, 2).join(" & ") : firstNames[0] ?? space.name; const initials = names.length > 1 ? firstNames.slice(0, 2).map((item) => item[0]).join("").toUpperCase() : (firstNames[0]?.slice(0, 2) ?? "F").toUpperCase(); const current = rows.find(({ user }) => user.id === context.user.id); return [{ value: space.id, initials, name, description: names.length > 1 ? "Conta conjunta" : "Conta do usuário", image: current?.user.image ?? null }]; }).flat();
+
+  return memberships.flatMap(({ financialSpaceId, role }) => {
+    const space = spaces.find(({ id }) => id === financialSpaceId);
+    if (!space) return [];
+    const rows = space.members;
+    const names = Array.from(new Set(rows.map(({ user }) => user.name.trim()).filter(Boolean)));
+    const firstNames = names.map((name) => name.split(/\s+/)[0]);
+    const current = rows.find(({ user }) => user.id === context.user.id);
+    const isJoint = rows.length > 1;
+    const name = isJoint ? firstNames.slice(0, 2).join(" & ") : firstNames[0] ?? space.name;
+    const initials = isJoint ? firstNames.slice(0, 2).map((item) => item[0]).join("").toUpperCase() : (firstNames[0]?.slice(0, 2) ?? "F").toUpperCase();
+    const description = isJoint ? "Conta conjunta" : ["owner", "admin"].includes(role) ? "Conta do administrador" : "Conta convidado";
+    return [{ value: space.id, initials, name, description, image: current?.user.image ?? null, role }];
+  });
 }
