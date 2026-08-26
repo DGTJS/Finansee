@@ -42,4 +42,4 @@ export type PluggyTransaction = { id: string; description?: string; merchant?: {
 
 export const getItem = (itemId: string) => pluggyFetch<PluggyItem>(`/items/${encodeURIComponent(itemId)}`);
 export const getAccounts = (itemId: string) => pluggyFetch<{ results: PluggyAccount[] }>(`/accounts?itemId=${encodeURIComponent(itemId)}`);
-export const getTransactions = (accountId: string) => pluggyFetch<{ results: PluggyTransaction[] }>(`/transactions?accountId=${encodeURIComponent(accountId)}&pageSize=500`);
+export const getTransactions = (accountId: string, page = 1) => pluggyFetch<{ results: PluggyTransaction[] }>(`/transactions?accountId=${encodeURIComponent(accountId)}&page=${page}&pageSize=500`);

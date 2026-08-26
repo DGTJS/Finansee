@@ -18,6 +18,16 @@ function accountType(account: PluggyAccount) {
   return "checking";
 }
 
+async function getAllTransactions(accountId: string) {
+  const transactions: PluggyTransaction[] = [];
+  for (let page = 1; page <= 20; page += 1) {
+    const result = await getTransactions(accountId, page);
+    transactions.push(...(result.results ?? []));
+    if ((result.results ?? []).length < 500) break;
+  }
+  return transactions;
+}
+
 function errorMessage(error: unknown) {
   if (!(error instanceof PluggyError)) return "Não foi possível atualizar os dados bancários.";
   return { PLUGGY_NOT_CONFIGURED: "A integração bancária ainda não foi configurada.", PLUGGY_AUTH_FAILED: "Não foi possível autenticar com o provedor bancário.", PLUGGY_AUTH_EXPIRED: "A sessão do provedor expirou. Tente atualizar novamente.", PLUGGY_RATE_LIMIT: "Limite de requisições atingido. Aguarde alguns instantes.", PLUGGY_API_ERROR: "A instituição não respondeu. Tente novamente mais tarde." }[error.message] ?? "Não foi possível atualizar os dados bancários.";
@@ -45,11 +55,14 @@ export async function syncOpenFinance(spaceId: string, itemId: string) {
         const existing = await tx.bankAccount.findUnique({ where: { connectionId_externalAccountId: { connectionId: connection.id, externalAccountId: external.id } } });
         const financialAccount = existing?.financialAccountId ? null : await tx.financialAccount.create({ data: { id: randomUUID(), financialSpaceId: spaceId, ownerUserId: userId, name: external.name ?? "Conta importada", bank: connection.connectorName, type: accountType(external), balanceCents: cents(external.balance), currencyCode, color: "ocean" } });
         const bankAccount = await tx.bankAccount.upsert({ where: { connectionId_externalAccountId: { connectionId: connection.id, externalAccountId: external.id } }, create: { id: randomUUID(), connectionId: connection.id, financialAccountId: financialAccount?.id, externalAccountId: external.id, name: external.name ?? "Conta importada", type: accountType(external), subtype: external.subtype ?? null, maskedNumber: external.number ? `•••• ${external.number.slice(-4)}` : null, currencyCode, currentBalanceCents: cents(external.balance), availableBalanceCents: cents(external.availableBalance) }, update: { name: external.name ?? "Conta importada", type: accountType(external), subtype: external.subtype ?? null, maskedNumber: external.number ? `•••• ${external.number.slice(-4)}` : null, currencyCode, currentBalanceCents: cents(external.balance), availableBalanceCents: cents(external.availableBalance), updatedAt: new Date() } });
-        const transactions = await getTransactions(external.id);
-        for (const externalTransaction of transactions.results ?? []) {
+        const transactions = await getAllTransactions(external.id);
+        for (const externalTransaction of transactions) {
           const externalId = externalTransaction.id;
           const date = new Date(externalTransaction.date ?? new Date());
-          const data = { description: externalTransaction.description ?? externalTransaction.merchant?.name ?? "Transação importada", merchantName: externalTransaction.merchant?.name ?? null, amountCents: signedAmount(externalTransaction), kind: signedAmount(externalTransaction) < 0 ? "expense" : "income", source: "OPEN_FINANCE", competenceDate: date, updatedAt: new Date(), bankAccountId: bankAccount.id };
+          const amountCents = signedAmount(externalTransaction);
+          const categoryName = externalTransaction.category?.trim() || (amountCents < 0 ? "Despesas importadas" : "Receitas importadas");
+          const category = await tx.category.upsert({ where: { id: `${spaceId}:${categoryName}` }, create: { id: `${spaceId}:${categoryName}`, financialSpaceId: spaceId, name: categoryName, kind: amountCents < 0 ? "expense" : "income", color: "ocean" }, update: {} });
+          const data = { description: externalTransaction.description ?? externalTransaction.merchant?.name ?? "Transação importada", merchantName: externalTransaction.merchant?.name ?? null, amountCents, kind: amountCents < 0 ? "expense" : "income", categoryId: category.id, source: "OPEN_FINANCE", competenceDate: date, updatedAt: new Date(), bankAccountId: bankAccount.id };
           const current = await tx.transaction.findFirst({ where: { bankAccountId: bankAccount.id, externalTransactionId: externalId } });
           if (current) await tx.transaction.update({ where: { id: current.id }, data });
           else await tx.transaction.create({ data: { id: randomUUID(), financialSpaceId: spaceId, accountId: bankAccount.financialAccountId ?? financialAccount!.id, externalTransactionId: externalId, ...data } });
