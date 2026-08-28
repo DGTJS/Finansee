@@ -1,6 +1,7 @@
 "use server";
 
 import { createHash, randomUUID } from "node:crypto";
+import pdf from "pdf-parse";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -40,6 +41,15 @@ function splitCsv(text: string) {
   return rows;
 }
 
+function splitPdfStatement(text: string) {
+  const result: string[][] = [["Data", "Descrição", "Valor"]];
+  for (const line of text.split(/\r?\n/)) {
+    const match = line.trim().match(/^(\d{1,2}[/.\-]\d{1,2}[/.\-]\d{4}|\d{4}-\d{2}-\d{2})\s+(.+?)\s+([-+]?\(?\s*R?\$?\s*[\d.]+(?:,\d{2})?\)?)[\s]*$/i);
+    if (match) result.push([match[1], match[2], match[3]]);
+  }
+  return result;
+}
+
 function normalizeHeader(value: string) { return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, ""); }
 function parseDate(value: string) {
   const clean = value.trim();
@@ -66,7 +76,7 @@ function fingerprint(row: Pick<ImportedStatementRow, "date" | "description" | "a
 export async function analyzeStatement(formData: FormData) {
   const spaceId = String(formData.get("spaceId") ?? "");
   const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0 || file.size > MAX_FILE_SIZE) return { success: false, message: "Envie um arquivo CSV de até 2 MB.", fieldErrors: {} };
+  if (!(file instanceof File) || file.size === 0 || file.size > MAX_FILE_SIZE) return { success: false, message: "Envie um arquivo CSV ou PDF de até 2 MB.", fieldErrors: {} };
   try {
     await requireSpaceAccess(spaceId, "transactions:write");
     await ensureDefaultCategories(spaceId);
@@ -75,19 +85,23 @@ export async function analyzeStatement(formData: FormData) {
       prisma.category.findMany({ where: { financialSpaceId: spaceId }, select: { id: true, name: true, kind: true } }),
     ]);
     if (!accounts.length) return { success: false, message: "Cadastre uma conta antes de importar o extrato.", fieldErrors: {} };
-    const rows = splitCsv((await file.text()).replace(/^\uFEFF/, ""));
+    const isPdf = file.name.toLowerCase().endsWith(".pdf");
+    const fileText = isPdf ? (await pdf(new Uint8Array(await file.arrayBuffer()))).text : await file.text();
+    const rows = isPdf ? splitPdfStatement(fileText) : splitCsv(fileText.replace(/^\uFEFF/, ""));
     if (rows.length < 2) return { success: false, message: "O CSV precisa ter cabeçalho e ao menos um lançamento.", fieldErrors: {} };
     const headers = rows[0].map(normalizeHeader);
-    const dateIndex = headers.findIndex((header) => ["data", "date", "datamovimento"].includes(header));
-    const descriptionIndex = headers.findIndex((header) => ["descricao", "description", "historico", "memo"].includes(header));
-    const amountIndex = headers.findIndex((header) => ["valor", "amount", "value", "quantia"].includes(header));
+    const dateIndex = headers.findIndex((header) => ["data", "date", "datamovimento", "datalancamento", "datadetransacao", "lancamento"].includes(header));
+    const descriptionIndex = headers.findIndex((header) => ["descricao", "description", "historico", "memo", "detalhes", "lancamentodescricao"].includes(header));
+    const amountIndex = headers.findIndex((header) => ["valor", "amount", "value", "quantia", "valorr", "valorbrl", "montante"].includes(header));
+    const creditIndex = headers.findIndex((header) => ["credito", "credit", "entradas", "entrada"].includes(header));
+    const debitIndex = headers.findIndex((header) => ["debito", "debit", "saidas", "saida"].includes(header));
     const typeIndex = headers.findIndex((header) => ["tipo", "type", "natureza"].includes(header));
-    if ([dateIndex, descriptionIndex, amountIndex].some((index) => index < 0)) return { success: false, message: "Não encontrei as colunas Data, Descrição e Valor no CSV.", fieldErrors: {} };
+    if (dateIndex < 0 || descriptionIndex < 0 || (amountIndex < 0 && creditIndex < 0 && debitIndex < 0)) return { success: false, message: "Não encontrei as colunas de data, descrição e valor (ou crédito/débito) no extrato.", fieldErrors: {} };
     const existing = await prisma.transaction.findMany({ where: { financialSpaceId: spaceId }, select: { importFingerprint: true, accountId: true, amountCents: true, description: true, competenceDate: true } });
     const existingFingerprints = new Set(existing.flatMap((row) => [row.importFingerprint, fingerprint({ date: row.competenceDate.toISOString().slice(0, 10), accountId: row.accountId, amountCents: row.amountCents, description: row.description })].filter((value): value is string => Boolean(value))));
     const defaultAccountId = accounts[0].id;
     const imported: ImportedStatementRow[] = rows.slice(1, MAX_ROWS + 1).flatMap((cells, index) => {
-      const date = parseDate(cells[dateIndex] ?? ""); const rawAmount = parseMoney(cells[amountIndex] ?? ""); const description = (cells[descriptionIndex] ?? "").trim();
+      const date = parseDate(cells[dateIndex] ?? ""); const rawAmount = amountIndex >= 0 ? parseMoney(cells[amountIndex] ?? "") : (parseMoney(cells[creditIndex] ?? "") ?? (parseMoney(cells[debitIndex] ?? "") === null ? null : -Math.abs(parseMoney(cells[debitIndex] ?? "") ?? 0))); const description = (cells[descriptionIndex] ?? "").trim();
       if (!date || rawAmount === null || rawAmount === 0 || description.length < 2) return [];
       const type = (cells[typeIndex] ?? "").toLowerCase();
       const kind = /credito|credit|entrada|income|receita|deposit/.test(type) ? "income" : /debito|debit|saida|expense|despesa|pagamento/.test(type) ? "expense" : rawAmount > 0 ? "income" : "expense";

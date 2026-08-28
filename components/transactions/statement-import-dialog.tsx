@@ -53,11 +53,13 @@ export function StatementImportDialog({ spaceId, accounts, categories, onImporte
   }
 
   return <>
-    <Button type="button" variant="outline" onClick={() => { setMessage(""); inputRef.current?.click(); }} disabled={pending || !accounts.length}>
-      <Banknote data-icon="inline-start" />Importar extrato
-    </Button>
-    <input ref={inputRef} type="file" accept=".csv,text/csv" className="sr-only" onChange={(event) => { chooseFile(event.target.files?.[0]); event.target.value = ""; }} />
-    {message && !open && <p className="mt-2 text-xs text-status-danger" role="status">{message}</p>}
+    <div className="flex flex-col items-start gap-1">
+      <Button type="button" variant="outline" onClick={() => { setMessage(""); inputRef.current?.click(); }} disabled={pending || !accounts.length}>
+        <Banknote data-icon="inline-start" />Importar extrato
+      </Button>
+      {message && !open && <p className="max-w-xs text-xs text-status-danger" role="status">{message}</p>}
+    </div>
+    <input ref={inputRef} type="file" accept=".csv,.pdf,text/csv,application/pdf" className="sr-only" onChange={(event) => { chooseFile(event.target.files?.[0]); event.target.value = ""; }} />
     <Dialog open={open} onOpenChange={(value) => !pending && setOpen(value)}>
       <DialogContent className="w-[min(calc(100vw-1rem),58rem)] max-w-none p-4 sm:p-6">
         <DialogHeader>
