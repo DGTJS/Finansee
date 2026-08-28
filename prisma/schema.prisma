@@ -78,6 +78,7 @@ model FinancialSpace {
   id                String               @id
   name              String
   ownerId           String               @map("owner_id")
+  personalKey       String?              @unique @map("personal_key")
   createdAt         DateTime             @default(now()) @map("created_at")
   updatedAt         DateTime             @default(now()) @map("updated_at")
   owner             User                 @relation("SpaceOwner", fields: [ownerId], references: [id])

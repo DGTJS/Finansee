@@ -53,7 +53,12 @@ export async function getAvailableSpaces(): Promise<AvailableSpace[]> {
   const sharedParticipantIds = Array.from(new Set(directSpaces.filter((space) => space.members.length > 1).flatMap((space) => space.members.map(({ user }) => user.id))));
   const linkedPersonalSpaces = sharedParticipantIds.length ? await prisma.financialSpace.findMany({ where: { ownerId: { in: sharedParticipantIds } }, include: { members: { where: { status: "active" }, include: { user: { select: { id: true, name: true, image: true } } } } } }) : [];
   const linkedPersonal = linkedPersonalSpaces.filter((space) => space.members.length === 1 && space.members[0]?.user.id === space.ownerId);
-  const spaces = Array.from(new Map([...directSpaces, ...linkedPersonal].map((space) => [space.id, space])).values());
+  const spaces = Array.from(new Map([...directSpaces, ...linkedPersonal].map((space) => [space.id, space])).values())
+    .sort((left, right) => Number(Boolean(right.personalKey)) - Number(Boolean(left.personalKey)) || left.createdAt.getTime() - right.createdAt.getTime())
+    .filter((space, index, all) => {
+      if (space.members.length !== 1 || space.members[0]?.user.id !== space.ownerId) return true;
+      return all.findIndex((candidate) => candidate.members.length === 1 && candidate.members[0]?.user.id === candidate.ownerId && candidate.ownerId === space.ownerId) === index;
+    });
   const roleBySpace = new Map(memberships.map(({ financialSpaceId, role }) => [financialSpaceId, role]));
 
   return spaces.flatMap((space) => {
@@ -83,16 +88,18 @@ async function ensureLinkedPersonalSpaces(spaces: LinkedSpace[]): Promise<void> 
 
   await prisma.$transaction(async (tx) => {
     for (const participant of participants) {
-      const ownedSpaces = await tx.financialSpace.findMany({
-        where: { ownerId: participant.id },
-        select: { id: true, members: { where: { status: "active" }, select: { userId: true } } },
-      });
-      const personalExists = ownedSpaces.some((space) => space.members.length === 1 && space.members[0]?.userId === participant.id);
-      if (personalExists) continue;
-
       const id = randomUUID();
-      await tx.financialSpace.create({ data: { id, name: `Conta de ${participant.name.trim()}`, ownerId: participant.id } });
-      await tx.spaceMember.create({ data: { id: randomUUID(), financialSpaceId: id, userId: participant.id, role: "owner", status: "active" } });
+      const personal = await tx.financialSpace.upsert({
+        where: { personalKey: `${participant.id}:personal` },
+        create: { id, name: `Conta de ${participant.name.trim()}`, ownerId: participant.id, personalKey: `${participant.id}:personal` },
+        update: {},
+        select: { id: true },
+      });
+      await tx.spaceMember.upsert({
+        where: { financialSpaceId_userId: { financialSpaceId: personal.id, userId: participant.id } },
+        create: { id: randomUUID(), financialSpaceId: personal.id, userId: participant.id, role: "owner", status: "active" },
+        update: { status: "active", role: "owner", updatedAt: new Date() },
+      });
     }
   });
 }

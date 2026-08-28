@@ -24,17 +24,19 @@ function invalid(error: z.ZodError) { return { success: false as const, message:
 type SpaceTransaction = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
 async function ensurePersonalSpace(tx: SpaceTransaction, userId: string, userName: string) {
-  const personal = await tx.financialSpace.findFirst({
-    where: { members: { every: { userId, status: "active" } } },
-    include: { members: { select: { userId: true, status: true } } },
-    orderBy: { createdAt: "asc" },
-  });
-  if (personal && personal.members.length === 1) return personal.id;
-
   const id = randomUUID();
-  await tx.financialSpace.create({ data: { id, name: `Conta de ${userName.trim()}`, ownerId: userId } });
-  await tx.spaceMember.create({ data: { id: randomUUID(), financialSpaceId: id, userId, role: "owner", status: "active" } });
-  return id;
+  const personal = await tx.financialSpace.upsert({
+    where: { personalKey: `${userId}:personal` },
+    create: { id, name: `Conta de ${userName.trim()}`, ownerId: userId, personalKey: `${userId}:personal` },
+    update: {},
+    select: { id: true },
+  });
+  await tx.spaceMember.upsert({
+    where: { financialSpaceId_userId: { financialSpaceId: personal.id, userId } },
+    create: { id: randomUUID(), financialSpaceId: personal.id, userId, role: "owner", status: "active" },
+    update: { status: "active", role: "owner", updatedAt: new Date() },
+  });
+  return personal.id;
 }
 
 async function ensureJointSpace(tx: SpaceTransaction, sourceSpaceId: string, inviterId: string, invitedUserId: string, invitedRole: string, inviterName: string, invitedName: string) {
