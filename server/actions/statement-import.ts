@@ -1,7 +1,9 @@
 "use server";
 
 import { createHash, randomUUID } from "node:crypto";
-import pdf from "pdf-parse";
+// Import the parser implementation directly. The package entrypoint contains a
+// debug block that reads ./test/data/... when bundled by Turbopack in Vercel.
+import pdf from "pdf-parse/lib/pdf-parse.js";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
