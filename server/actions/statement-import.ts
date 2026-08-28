@@ -96,11 +96,37 @@ function parseMoney(value: string) {
   const unsigned = raw.replace(/[()\-+]/g, "");
   try { return (negative ? -1 : 1) * parseAmountCents(unsigned); } catch { return null; }
 }
+function normalizeMerchantDescription(description: string) {
+  const text = description.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (/\buber\b/.test(text)) return "Uber";
+  if (/\b99\s*food\b/.test(text)) return "99Food";
+  if (/\bifood\b/.test(text)) return "iFood";
+  if (/\bautopass\b/.test(text)) return "AutoPass";
+  if (/\bsabesp\b/.test(text)) return "Sabesp";
+  if (/\bnetflix\b/.test(text)) return "Netflix";
+  if (/\bspotify\b/.test(text)) return "Spotify";
+  if (/\bprime\b/.test(text)) return "Amazon Prime";
+  if (/\bdisney\b/.test(text)) return "Disney+";
+  if (/\bdeezer\b/.test(text)) return "Deezer";
+  if (/\byoutube\b/.test(text)) return "YouTube Premium";
+  const transfer = text.match(/(?:pix\s+transf|pix\s+transferencia|transferencia\s+pix)\s+(.+?)(?:\s+\d{1,2}[/.\-]\d{1,2})?$/i);
+  if (transfer?.[1]) return `Transferência - ${transfer[1].trim().replace(/\s+/g, " ")}`;
+  return description.replace(/\s+/g, " ").trim();
+}
+
 function classify(description: string, kind: "income" | "expense", categories: Array<{ id: string; name: string; kind: string }>) {
-  const text = description.toLowerCase();
-  const keywords: Array<[string[], string]> = [[ ["netflix", "spotify", "prime", "disney", "deezer", "youtube"], "Assinaturas" ], [["uber", "99", "combust", "posto", "gasolina"], "Transporte"], [["ifood", "restaurante", "lanch", "burger", "pizza"], "Restaurantes"], [["mercado", "supermercado", "carrefour", "assai", "atacadao"], "Mercado"], [["farmacia", "drogaria", "hospital", "clinica"], "Saúde"], [["salario", "folha", "pagamento", "pro labore"], "Salário"], [["aluguel"], "Aluguel recebido"]];
-  const match = keywords.find(([terms]) => terms.some((term) => text.includes(term)) && categories.some((category) => category.kind === kind && category.name === (keywords.find(([items]) => items === terms)?.[1] ?? "")));
-  const preferred = match?.[1] ?? (kind === "income" ? "Outros recebimentos" : "Outros gastos");
+  const text = description.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const keywords: Array<[RegExp, string]> = [
+    [/netflix|spotify|amazon prime|disney|deezer|youtube premium/, "Assinaturas"],
+    [/uber|autopass|\b99\b|combust|posto|gasolina/, "Transporte"],
+    [/99food|ifood|restaurante|lanch|burger|pizza/, "Restaurantes"],
+    [/sabesp/, "Contas e serviços"],
+    [/mercado|supermercado|carrefour|assai|atacadao/, "Mercado"],
+    [/farmacia|drogaria|hospital|clinica/, "Saúde"],
+    [/salario|folha|pagamento|pro labore/, "Salário"],
+    [/aluguel/, "Aluguel recebido"],
+  ];
+  const preferred = keywords.find(([pattern, categoryName]) => pattern.test(text) && categories.some((category) => category.kind === kind && category.name === categoryName))?.[1] ?? (kind === "income" ? "Outros recebimentos" : "Outros gastos");
   return categories.find((category) => category.kind === kind && category.name === preferred)?.id ?? categories.find((category) => category.kind === kind)?.id ?? "";
 }
 function fingerprint(row: Pick<ImportedStatementRow, "date" | "description" | "amountCents" | "accountId">) { return createHash("sha256").update([row.date, row.accountId, row.amountCents, row.description.trim().toLowerCase()].join("|"), "utf8").digest("hex"); }
@@ -138,7 +164,8 @@ export async function analyzeStatement(formData: FormData) {
       const type = (cells[typeIndex] ?? "").toLowerCase();
       const kind = /credito|credit|entrada|income|receita|deposit/.test(type) ? "income" : /debito|debit|saida|expense|despesa|pagamento/.test(type) ? "expense" : rawAmount > 0 ? "income" : "expense";
       const amountCents = kind === "expense" ? -Math.abs(rawAmount) : Math.abs(rawAmount);
-      const base = { date, description, amountCents, kind: kind as "income" | "expense", accountId: defaultAccountId, categoryId: classify(description, kind as "income" | "expense", categories) };
+      const normalizedDescription = normalizeMerchantDescription(description);
+      const base = { date, description: normalizedDescription, amountCents, kind: kind as "income" | "expense", accountId: defaultAccountId, categoryId: classify(normalizedDescription, kind as "income" | "expense", categories) };
       const importedFingerprint = fingerprint(base); return [{ ...base, id: `import-${index}-${importedFingerprint.slice(0, 8)}`, isDuplicate: existingFingerprints.has(importedFingerprint), duplicateOf: importedFingerprint }];
     });
     if (!imported.length) return { success: false, message: "Nenhum lançamento válido foi encontrado.", fieldErrors: {} };
