@@ -56,6 +56,7 @@ type TransactionListProps = {
   footerLabel?: string;
   footerHref?: string;
   onDelete?: (id: string) => Promise<{ success: boolean; message?: string }>;
+  onBulkDelete?: (ids: string[]) => Promise<{ success: boolean; message?: string }>;
   onCancel?: (id: string) => void | Promise<void>;
   onEdit?: (transaction: TransactionListItem) => void;
   deleting?: boolean;
@@ -79,6 +80,7 @@ export function TransactionList({
   footerLabel = "Ver todas",
   footerHref,
   onDelete,
+  onBulkDelete,
   onCancel,
   onEdit,
   deleting = false,
@@ -95,6 +97,12 @@ export function TransactionList({
     useState<TransactionListItem | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteMessage, setDeleteMessage] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const visibleIds = transactions.map((transaction) => transaction.id);
+  const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
+  const toggleSelected = (id: string) => setSelectedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  const toggleAll = () => setSelectedIds((current) => allSelected ? current.filter((id) => !visibleIds.includes(id)) : [...new Set([...current, ...visibleIds])]);
   return (
     <div className={cn("w-full font-sans", className)}>
       <motion.div
@@ -126,6 +134,10 @@ export function TransactionList({
                   </p>
                 )}
                 {toolbar && <div className="mt-5">{toolbar}</div>}
+                {onBulkDelete && transactions.length > 0 && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2">
+                  <label className="flex items-center gap-2 text-sm text-muted-foreground"><input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Selecionar todos os lançamentos visíveis" className="size-4 accent-primary" />Selecionar todos</label>
+                  {selectedIds.length > 0 && <button type="button" className="text-sm font-semibold text-status-danger hover:underline" onClick={() => setBulkDeleteDialogOpen(true)}>Excluir selecionados ({selectedIds.length})</button>}
+                </div>}
               </div>
               <div
                 className={cn(
@@ -153,6 +165,7 @@ export function TransactionList({
                         }
                       }}
                     >
+                      {onBulkDelete && <input type="checkbox" checked={selectedIds.includes(transaction.id)} aria-label={`Selecionar ${transaction.name}`} onChange={() => toggleSelected(transaction.id)} onClick={(event) => event.stopPropagation()} className="mx-1 size-4 shrink-0 accent-primary" />}
                       <span className="flex min-w-0 items-center gap-3">
                         <motion.span
                           layoutId={`icon-${transaction.id}`}
@@ -435,6 +448,18 @@ export function TransactionList({
           </AlertDialogContent>
         </AlertDialog>
       )}
+      {onBulkDelete && <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir lançamentos selecionados?</AlertDialogTitle>
+            <AlertDialogDescription>Você selecionou {selectedIds.length} lançamento{selectedIds.length === 1 ? "" : "s"}. Eles serão cancelados e os saldos pagos serão ajustados.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction type="button" className="bg-status-danger text-white hover:bg-status-danger/90" disabled={isDeleting} onClick={async () => { const result = await onBulkDelete(selectedIds); if (result.success) { setSelectedIds([]); setBulkDeleteDialogOpen(false); } }}>{isDeleting ? "Excluindo..." : "Excluir selecionados"}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>}
     </div>
   );
 }
