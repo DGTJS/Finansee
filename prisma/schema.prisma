@@ -245,6 +245,7 @@ model Transaction {
   installmentCount      Int?              @map("installment_count")
   description           String
   source                String?
+  importFingerprint     String?           @unique @map("import_fingerprint")
   amountCents           Int               @map("amount_cents")
   kind                  String
   status                String            @default("paid")
