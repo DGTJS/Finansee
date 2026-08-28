@@ -19,11 +19,19 @@ export async function resolveSpaceId(value?: string) {
   });
   const defaultPersonal = personalSpaces.find((space) => space.personalKey !== null)
     ?? personalSpaces.find((space) => space.members.length === 1 && space.members[0]?.userId === context.user.id);
+  const defaultJoint = memberships.length ? await prisma.financialSpace.findFirst({
+    where: {
+      id: { in: memberships.map(({ financialSpaceId }) => financialSpaceId) },
+      members: { some: { userId: { not: context.user.id }, status: "active" } },
+    },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  }) : null;
   const directlyAccessible = value && memberships.some((membership) => membership.financialSpaceId === value);
   const linkedPersonal = value && !directlyAccessible
     ? await getLinkedPersonalSpaceIds(context.user.id, memberships.map(({ financialSpaceId }) => financialSpaceId))
     : [];
-  const requested = value && (directlyAccessible || linkedPersonal.includes(value)) ? value : defaultPersonal?.id ?? memberships[0]?.financialSpaceId;
+  const requested = value && (directlyAccessible || linkedPersonal.includes(value)) ? value : defaultJoint?.id ?? defaultPersonal?.id ?? memberships[0]?.financialSpaceId;
   if (!requested) throw new Error("FORBIDDEN");
   return requested;
 }
