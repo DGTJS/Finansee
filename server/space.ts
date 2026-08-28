@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { getAuthContext } from "@/server/auth-context";
 
@@ -48,6 +49,7 @@ export async function getAvailableSpaces(): Promise<AvailableSpace[]> {
   const memberships = await prisma.spaceMember.findMany({ where: { userId: context.user.id, status: "active" }, select: { financialSpaceId: true, role: true }, orderBy: { createdAt: "asc" } });
   const directSpaceIds = memberships.map(({ financialSpaceId }) => financialSpaceId);
   const directSpaces = await prisma.financialSpace.findMany({ where: { id: { in: directSpaceIds } }, include: { members: { where: { status: "active" }, include: { user: { select: { id: true, name: true, image: true } } } } } });
+  await ensureLinkedPersonalSpaces(directSpaces);
   const sharedParticipantIds = Array.from(new Set(directSpaces.filter((space) => space.members.length > 1).flatMap((space) => space.members.map(({ user }) => user.id))));
   const linkedPersonalSpaces = sharedParticipantIds.length ? await prisma.financialSpace.findMany({ where: { ownerId: { in: sharedParticipantIds } }, include: { members: { where: { status: "active" }, include: { user: { select: { id: true, name: true, image: true } } } } } }) : [];
   const linkedPersonal = linkedPersonalSpaces.filter((space) => space.members.length === 1 && space.members[0]?.user.id === space.ownerId);
@@ -67,4 +69,30 @@ export async function getAvailableSpaces(): Promise<AvailableSpace[]> {
     const description = isJoint ? "Conta conjunta" : owner?.id === context.user.id ? "Conta do administrador" : "Conta individual";
     return [{ value: space.id, initials, name, description, image: owner?.image ?? null, role }];
   }).sort((left, right) => Number(left.description === "Conta conjunta") - Number(right.description === "Conta conjunta") || left.name.localeCompare(right.name, "pt-BR"));
+}
+
+type LinkedSpace = { members: Array<{ user: { id: string; name: string } }> };
+
+async function ensureLinkedPersonalSpaces(spaces: LinkedSpace[]): Promise<void> {
+  const participants = Array.from(new Map(
+    spaces
+      .filter((space) => space.members.length > 1)
+      .flatMap((space) => space.members.map((member) => [member.user.id, member.user] as const)),
+  ).values());
+  if (!participants.length) return;
+
+  await prisma.$transaction(async (tx) => {
+    for (const participant of participants) {
+      const ownedSpaces = await tx.financialSpace.findMany({
+        where: { ownerId: participant.id },
+        select: { id: true, members: { where: { status: "active" }, select: { userId: true } } },
+      });
+      const personalExists = ownedSpaces.some((space) => space.members.length === 1 && space.members[0]?.userId === participant.id);
+      if (personalExists) continue;
+
+      const id = randomUUID();
+      await tx.financialSpace.create({ data: { id, name: `Conta de ${participant.name.trim()}`, ownerId: participant.id } });
+      await tx.spaceMember.create({ data: { id: randomUUID(), financialSpaceId: id, userId: participant.id, role: "owner", status: "active" } });
+    }
+  });
 }
