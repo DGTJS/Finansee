@@ -64,10 +64,11 @@ function splitBankPdfStatement(text: string) {
     pending = "";
     const date = line.match(datePattern)?.[1];
     const rest = date ? line.slice(date.length).trim() : "";
-    const amount = rest.match(amountPattern);
-    if (!date || !amount) return;
-    const description = rest.slice(0, amount.index).trim();
-    if (description && !/^saldo do dia$/i.test(description)) result.push([date, description, amount[1]]);
+    const datedAmount = rest.match(/(\d{1,2}[/.]\d{1,2})\s*([-+]?\s*(?:R\$\s*)?(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})\s*$/i);
+    const amount = datedAmount ? datedAmount[2] : rest.match(amountPattern)?.[1];
+    const description = datedAmount ? rest.slice(0, datedAmount.index).trim() : rest.slice(0, rest.length - (amount?.length ?? 0)).trim();
+    if (!date || !amount || !description || /^saldo do dia$/i.test(description)) return;
+    result.push([date, description, amount]);
   };
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.trim();
