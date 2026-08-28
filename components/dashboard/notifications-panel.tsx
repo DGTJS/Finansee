@@ -77,8 +77,8 @@ export function NotificationsPanel() {
       {data.unreadCount > 0 && <span className="absolute right-2 top-2 size-2 rounded-full bg-status-danger ring-2 ring-background" aria-hidden="true" />}
     </Button>
     <AnimatePresence>
-      {open && <motion.div className="fixed inset-0 z-50 bg-foreground/25 backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setOpen(false)}>
-        <motion.aside role="dialog" aria-modal="true" aria-labelledby="notifications-title" className="absolute right-0 top-0 flex h-full w-[min(100%,25rem)] flex-col border-l border-border bg-card text-card-foreground shadow-2xl" initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 28, stiffness: 260 }} onClick={(event) => event.stopPropagation()}>
+      {open && <motion.div className="fixed inset-0 z-50 h-dvh min-h-dvh bg-foreground/25 backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setOpen(false)}>
+        <motion.aside role="dialog" aria-modal="true" aria-labelledby="notifications-title" className="absolute right-0 top-0 flex h-dvh min-h-dvh max-h-dvh w-[min(100%,25rem)] flex-col overflow-hidden border-l border-border bg-card text-card-foreground shadow-2xl" initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 28, stiffness: 260 }} onClick={(event) => event.stopPropagation()}>
           <header className="border-b border-border bg-card/95 px-5 pb-4 pt-6 backdrop-blur">
             <div className="flex items-start justify-between gap-4">
               <div><p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">Central de atividade</p><h2 id="notifications-title" className="mt-1 font-display text-2xl font-semibold tracking-tight">Notificações</h2><p className="mt-1 text-sm text-muted-foreground">Alertas importantes e movimentações recentes.</p></div>

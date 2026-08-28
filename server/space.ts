@@ -11,9 +11,28 @@ export async function resolveSpaceId(value?: string) {
   const context = await getAuthContext();
   if (!context) redirect("/login");
   const memberships = await prisma.spaceMember.findMany({ where: { userId: context.user.id, status: "active" }, select: { financialSpaceId: true } });
-  const requested = value && memberships.some((membership) => membership.financialSpaceId === value) ? value : memberships[0]?.financialSpaceId;
+  const directlyAccessible = value && memberships.some((membership) => membership.financialSpaceId === value);
+  const linkedPersonal = value && !directlyAccessible
+    ? await getLinkedPersonalSpaceIds(context.user.id, memberships.map(({ financialSpaceId }) => financialSpaceId))
+    : [];
+  const requested = value && (directlyAccessible || linkedPersonal.includes(value)) ? value : memberships[0]?.financialSpaceId;
   if (!requested) throw new Error("FORBIDDEN");
   return requested;
+}
+
+async function getLinkedPersonalSpaceIds(userId: string, directSpaceIds: string[]) {
+  if (!directSpaceIds.length) return [];
+  const spaces = await prisma.financialSpace.findMany({
+    where: { id: { in: directSpaceIds }, members: { some: { userId, status: "active" } } },
+    select: { ownerId: true, members: { where: { status: "active" }, select: { userId: true } } },
+  });
+  const participantIds = Array.from(new Set(spaces.filter((space) => space.members.length > 1).flatMap((space) => space.members.map(({ userId: memberId }) => memberId))));
+  if (!participantIds.length) return [];
+  const personalSpaces = await prisma.financialSpace.findMany({
+    where: { ownerId: { in: participantIds } },
+    select: { id: true, ownerId: true, members: { where: { status: "active" }, select: { userId: true } } },
+  });
+  return personalSpaces.filter((space) => space.members.length === 1 && space.members[0]?.userId === space.ownerId).map(({ id }) => id);
 }
 
 export async function getSpaceDisplayName(spaceId: string) {
@@ -47,5 +66,5 @@ export async function getAvailableSpaces(): Promise<AvailableSpace[]> {
     const role = roleBySpace.get(space.id) ?? "viewer";
     const description = isJoint ? "Conta conjunta" : owner?.id === context.user.id ? "Conta do administrador" : "Conta individual";
     return [{ value: space.id, initials, name, description, image: owner?.image ?? null, role }];
-  }).sort((left, right) => Number(left.description === "Conta conjunta") - Number(right.description === "Conta conjunta"));
+  }).sort((left, right) => Number(left.description === "Conta conjunta") - Number(right.description === "Conta conjunta") || left.name.localeCompare(right.name, "pt-BR"));
 }
