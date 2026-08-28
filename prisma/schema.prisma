@@ -184,6 +184,7 @@ model IncomeProfile {
   kind             String
   amountCents      Int              @map("amount_cents")
   paymentDay       Int              @map("payment_day")
+  lastReceivedMonth String?         @map("last_received_month")
   active           Boolean          @default(true)
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @default(now()) @map("updated_at")

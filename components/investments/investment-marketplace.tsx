@@ -16,7 +16,7 @@ const moneyFormat = new Intl.NumberFormat("pt-BR", { style: "currency", currency
 export function InvestmentMarketplace({ spaceId, quotes }: { spaceId: string; quotes: MarketQuote[] }) {
   const [category, setCategory] = useState<InvestmentCategory>("Todos");
   const [selectedSymbol, setSelectedSymbol] = useState(investmentProducts[0].symbol);
-  const [amount, setAmount] = useState("100");
+  const [amount, setAmount] = useState("100,00");
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState("");
   const products = useMemo(() => investmentProducts.filter((product) => category === "Todos" || product.category === category), [category]);

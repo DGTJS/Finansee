@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Settings2, Trash2, WalletCards } from "@/components/icons";
+import { Check, Plus, Settings2, Trash2, WalletCards } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,17 +11,17 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createIncomeProfile, deleteIncomeProfile, updateIncomeProfile } from "@/server/actions/income-profiles";
-import { addBalance } from "@/server/actions/accounts";
+import { createIncomeProfile, deleteIncomeProfile, markIncomeReceived, updateIncomeProfile } from "@/server/actions/income-profiles";
 import { formatBRL } from "@/lib/utils";
 import { DeleteAccountSection, InviteAccountSection, ProfileSettings } from "@/components/settings/profile-settings";
 import { MemberManagement } from "@/components/settings/member-management";
 import { ThemeSelector } from "@/components/theme/theme-selector";
 
-type IncomeProfile = { id: string; name: string; kind: string; amountCents: number; paymentDay: number; ownerName: string; accountName: string; ownerUserId?: string; accountId?: string };
+type IncomeProfile = { id: string; name: string; kind: string; amountCents: number; paymentDay: number; lastReceivedMonth?: string | null; financialSpaceId?: string; readOnly?: boolean; ownerName: string; accountName: string; ownerUserId?: string; accountId?: string };
 type Member = { id: string; userId: string; name: string; role: string; status: string; permissions: Record<string, boolean> };
 type Account = { id: string; name: string };
 type Capabilities = { canManageMembers: boolean; canManageIncomeProfiles: boolean; canDeleteAccount: boolean };
@@ -121,16 +121,12 @@ function IncomeSettings({ data }: { data: Data }) {
     });
   }
 
-  function recharge(profile: IncomeProfile) {
-    const form = new FormData();
-    form.set("spaceId", data.spaceId);
-    form.set("accountId", profile.accountId ?? "");
-    form.set("amount", (profile.amountCents / 100).toFixed(2));
+  function receive(profile: IncomeProfile) {
     startTransition(async () => {
-      const result = await addBalance(form);
+      const result = await markIncomeReceived(profile.id, data.spaceId);
       setMessage(result.message ?? "");
-      if (result.success) { toast.success(`Saldo de ${profile.name} adicionado.`); router.refresh(); }
-      else toast.error(result.message ?? "Não foi possível adicionar o saldo.");
+      if (result.success) { toast.success(result.message ?? "Recebimento registrado."); router.refresh(); }
+      else toast.error(result.message ?? "Não foi possível registrar o recebimento.");
     });
   }
 
@@ -145,7 +141,7 @@ function IncomeSettings({ data }: { data: Data }) {
           <Button type="button" onClick={() => openForm()} disabled={!canSubmit}><Plus data-icon="inline-start" />Adicionar renda</Button>
         </CardHeader>
         <CardContent className="grid gap-3">
-          {data.profiles.length ? <div className="grid gap-3 sm:grid-cols-2">{data.profiles.map((profile) => <article key={profile.id} className="group relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card to-primary/5 p-4 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"><div className="absolute inset-x-0 top-0 h-1 bg-primary" /><div className="flex items-start justify-between gap-3"><span className="grid size-10 place-items-center rounded-xl bg-primary/15 text-primary"><WalletCards className="size-5" /></span><span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">{labels[profile.kind as keyof typeof labels]}</span></div><p className="mt-5 truncate font-semibold">{profile.name}</p><p className="mt-1 text-xs text-muted-foreground">{profile.ownerName} · {profile.accountName}</p><div className="mt-4 flex items-end justify-between gap-3"><div><p className="text-xs text-muted-foreground">Saldo da recarga</p><p className="mt-1 text-2xl font-semibold tracking-tight">{formatBRL(profile.amountCents)}</p></div><div className="text-right"><p className="text-xs text-muted-foreground">Próxima recarga</p><p className="mt-1 text-sm font-semibold">Dia {profile.paymentDay}</p></div></div><div className="mt-4 flex gap-2 border-t border-border pt-3"><Button type="button" size="sm" className="flex-1" disabled={!canManage || pending || !profile.accountId} onClick={() => recharge(profile)}>{pending ? "Adicionando..." : "Adicionar saldo"}</Button><Button variant="ghost" size="icon" aria-label={`Editar ${profile.name}`} disabled={!canSubmit || pending} onClick={() => openForm(profile)}><Settings2 /></Button><IncomeDeleteButton profile={profile} pending={pending || !canManage} onConfirm={() => remove(profile)} /></div></article>)}</div> : (
+          {data.profiles.length ? <div className="grid gap-3 sm:grid-cols-2">{data.profiles.map((profile) => { const canManageProfile = canManage && !profile.readOnly; return <article key={profile.id} className="group relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card to-primary/5 p-4 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"><div className="absolute inset-x-0 top-0 h-1 bg-primary" /><div className="flex items-start justify-between gap-3"><span className="grid size-10 place-items-center rounded-xl bg-primary/15 text-primary"><WalletCards className="size-5" /></span><span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">{labels[profile.kind as keyof typeof labels]}</span></div><p className="mt-5 truncate font-semibold">{profile.name}</p><p className="mt-1 text-xs text-muted-foreground">{profile.ownerName} · {profile.accountName}</p>{profile.readOnly && <p className="mt-2 text-xs text-primary">Renda compartilhada do espaço conjunto</p>}<div className="mt-4 flex items-end justify-between gap-3"><div><p className="text-xs text-muted-foreground">Saldo da recarga</p><p className="mt-1 text-2xl font-semibold tracking-tight">{formatBRL(profile.amountCents)}</p></div><div className="text-right"><p className="text-xs text-muted-foreground">Próxima recarga</p><p className="mt-1 text-sm font-semibold">Dia {profile.paymentDay}</p></div></div><div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-3"><Button type="button" size="sm" className="flex-1" disabled={!canManageProfile || pending || !profile.accountId} onClick={() => receive(profile)}><Check data-icon="inline-start" />{pending ? "Registrando..." : "Marcar como recebido"}</Button><Button variant="ghost" size="icon" aria-label={`Editar ${profile.name}`} disabled={!canSubmit || pending || !canManageProfile} onClick={() => openForm(profile)}><Settings2 /></Button><IncomeDeleteButton profile={profile} pending={pending || !canManageProfile} onConfirm={() => remove(profile)} /></div></article>; })}</div> : (
             <Empty className="border border-border">
               <EmptyHeader>
                 <EmptyMedia variant="icon"><WalletCards /></EmptyMedia>
@@ -255,7 +251,7 @@ function IncomeForm({ profile, members, accounts, onSubmit, pending }: { profile
         <div className="grid gap-4 sm:grid-cols-2">
           <Field>
             <FieldLabel htmlFor="income-amount">Valor mensal (R$)</FieldLabel>
-            <Input id="income-amount" name="amount" type="number" min="0.01" step="0.01" defaultValue={profile ? (profile.amountCents / 100).toFixed(2) : undefined} placeholder="0,00" required />
+            <CurrencyInput id="income-amount" name="amount" defaultValue={profile ? (profile.amountCents / 100).toFixed(2) : undefined} placeholder="0,00" required />
           </Field>
           <Field>
             <FieldLabel htmlFor="income-payment-day">Dia de recebimento</FieldLabel>

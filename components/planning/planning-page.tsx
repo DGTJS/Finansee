@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -577,11 +578,8 @@ function GoalForm({
       <div className="grid grid-cols-2 gap-2">
         <label className="grid gap-1.5">
           <Label>Valor-alvo (R$)</Label>
-          <Input
+          <CurrencyInput
             name="target"
-            type="number"
-            min="0.01"
-            step="0.01"
             defaultValue={
               goal ? (goal.targetCents / 100).toFixed(2) : undefined
             }
@@ -591,11 +589,8 @@ function GoalForm({
         </label>
         <label className="grid gap-1.5">
           <Label>Já guardado</Label>
-          <Input
+          <CurrencyInput
             name="current"
-            type="number"
-            min="0"
-            step="0.01"
             defaultValue={goal ? (goal.currentCents / 100).toFixed(2) : "0"}
             required
             className="h-11 rounded-xl bg-card"
@@ -699,11 +694,8 @@ function BudgetForm({
       </label>
       <label className="grid gap-1.5">
         <Label>Limite mensal (R$)</Label>
-        <Input
+        <CurrencyInput
           name="limit"
-          type="number"
-          min="0.01"
-          step="0.01"
           defaultValue={
             budget ? (budget.limitCents / 100).toFixed(2) : undefined
           }

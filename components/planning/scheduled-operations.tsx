@@ -6,6 +6,7 @@ import { createInstallmentPlan, createRecurrence, generateRecurringOccurrences, 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -48,7 +49,7 @@ export function ScheduledOperations({ accounts, categories, recurrences, spaceId
       <div className="mb-5 grid grid-cols-2 gap-2 rounded-xl bg-muted p-1"><Button type="button" variant={mode === "installment" ? "default" : "ghost"} onClick={() => setMode("installment")}><Split data-icon />Parcelamento</Button><Button type="button" variant={mode === "recurrence" ? "default" : "ghost"} onClick={() => setMode("recurrence")}><Repeat data-icon />Recorrência</Button></div>
       <form className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" onSubmit={submit}>
         <label className="grid gap-2 sm:col-span-2"><Label htmlFor="scheduled-description">Descrição</Label><Input id="scheduled-description" name="description" required minLength={2} placeholder="Ex.: Aluguel ou compra parcelada" className="h-11 rounded-xl" /></label>
-        <label className="grid gap-2"><Label htmlFor="scheduled-amount">Valor total (R$)</Label><Input id="scheduled-amount" name="amount" type="number" min="0.01" step="0.01" required className="h-11 rounded-xl" /></label>
+        <label className="grid gap-2"><Label htmlFor="scheduled-amount">Valor total (R$)</Label><CurrencyInput id="scheduled-amount" name="amount" required className="h-11 rounded-xl" /></label>
         <label className="grid gap-2"><Label>Tipo</Label><Select value={kind} onValueChange={(value) => value && setKind(value)}><SelectTrigger className="h-11 rounded-xl"><SelectValue>{kind === "income" ? "Receita" : "Despesa"}</SelectValue></SelectTrigger><SelectContent><SelectItem value="expense">Despesa</SelectItem><SelectItem value="income">Receita</SelectItem></SelectContent></Select></label>
         {kind === "income" && <label className="grid gap-2 sm:col-span-2"><Label htmlFor="scheduled-source">Origem da receita</Label><Input id="scheduled-source" name="source" value={source} onChange={(event) => setSource(event.target.value)} required placeholder="Ex.: Salário, VA ou VR" className="h-11 rounded-xl" /></label>}
         <label className="grid gap-2"><Label>Conta</Label><Select value={accountId} onValueChange={(value) => value && setAccountId(value)}><SelectTrigger className="h-11 rounded-xl"><SelectValue>{accounts.find((item) => item.id === accountId)?.name ?? "Selecione"}</SelectValue></SelectTrigger><SelectContent>{accounts.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent></Select></label>
