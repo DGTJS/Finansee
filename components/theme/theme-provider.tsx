@@ -23,11 +23,17 @@ function applyTheme(theme: ThemeId, mode: ThemeMode) {
   root.classList.toggle("dark", mode === "dark");
   root.style.colorScheme = mode;
 }
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeId>("default");
-  const [mode, setModeState] = useState<ThemeMode>("light");
-  // Theme preferences are read from browser storage after hydration.
+export function ThemeProvider({ children, initialTheme, initialMode }: { children: React.ReactNode; initialTheme?: string; initialMode?: string }) {
+  const hasServerPreference = isThemeId(initialTheme ?? null) && (initialMode === "light" || initialMode === "dark");
+  const [theme, setThemeState] = useState<ThemeId>(hasServerPreference ? initialTheme as ThemeId : "default");
+  const [mode, setModeState] = useState<ThemeMode>(hasServerPreference ? initialMode as ThemeMode : "light");
+  // Authenticated preferences come from the database; local storage remains the fallback for logged-out pages.
   useEffect(() => {
+    if (hasServerPreference) {
+      applyTheme(initialTheme as ThemeId, initialMode as ThemeMode);
+      localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify({ theme: initialTheme, mode: initialMode }));
+      return;
+    }
     const saved = localStorage.getItem(THEME_STORAGE_KEY);
     try {
       const parsed = JSON.parse(saved ?? "null") as {
@@ -56,8 +62,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       setModeState("light");
       applyTheme("default", "light");
     }
-  }, []);
-  const persist = useCallback((nextTheme: ThemeId, nextMode: ThemeMode) => { setThemeState(nextTheme); setModeState(nextMode); localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify({ theme: nextTheme, mode: nextMode })); applyTheme(nextTheme, nextMode); }, []);
+  }, [hasServerPreference, initialMode, initialTheme]);
+  const persist = useCallback((nextTheme: ThemeId, nextMode: ThemeMode) => { setThemeState(nextTheme); setModeState(nextMode); localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify({ theme: nextTheme, mode: nextMode })); applyTheme(nextTheme, nextMode); void fetch("/api/preferences/theme", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ theme: nextTheme, mode: nextMode }) }).catch(() => undefined); }, []);
   const setTheme = useCallback((next: ThemeId) => persist(next, mode), [mode, persist]);
   const setMode = useCallback((next: ThemeMode) => persist(theme, next), [persist, theme]);
   const value = useMemo(() => ({ theme, mode, setTheme, setMode, options: themeOptions }), [mode, setMode, setTheme, theme]);

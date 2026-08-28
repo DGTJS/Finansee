@@ -13,6 +13,8 @@ model User {
   email                 String             @unique
   emailVerified         Boolean            @default(false) @map("email_verified")
   image                 String?
+  themeId               String             @default("default") @map("theme_id")
+  themeMode             String             @default("light") @map("theme_mode")
   createdAt             DateTime           @default(now()) @map("created_at")
   updatedAt             DateTime           @default(now()) @map("updated_at")
   sessions              Session[]

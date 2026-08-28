@@ -12,11 +12,18 @@ export async function resolveSpaceId(value?: string) {
   const context = await getAuthContext();
   if (!context) redirect("/login");
   const memberships = await prisma.spaceMember.findMany({ where: { userId: context.user.id, status: "active" }, select: { financialSpaceId: true } });
+  const personalSpaces = await prisma.financialSpace.findMany({
+    where: { ownerId: context.user.id },
+    select: { id: true, personalKey: true, members: { where: { status: "active" }, select: { userId: true } } },
+    orderBy: { createdAt: "asc" },
+  });
+  const defaultPersonal = personalSpaces.find((space) => space.personalKey !== null)
+    ?? personalSpaces.find((space) => space.members.length === 1 && space.members[0]?.userId === context.user.id);
   const directlyAccessible = value && memberships.some((membership) => membership.financialSpaceId === value);
   const linkedPersonal = value && !directlyAccessible
     ? await getLinkedPersonalSpaceIds(context.user.id, memberships.map(({ financialSpaceId }) => financialSpaceId))
     : [];
-  const requested = value && (directlyAccessible || linkedPersonal.includes(value)) ? value : memberships[0]?.financialSpaceId;
+  const requested = value && (directlyAccessible || linkedPersonal.includes(value)) ? value : defaultPersonal?.id ?? memberships[0]?.financialSpaceId;
   if (!requested) throw new Error("FORBIDDEN");
   return requested;
 }
