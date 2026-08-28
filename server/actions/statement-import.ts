@@ -53,6 +53,36 @@ function splitPdfStatement(text: string) {
 }
 
 function normalizeHeader(value: string) { return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, ""); }
+
+function splitBankPdfStatement(text: string) {
+  const result: string[][] = [["Data", "Descrição", "Valor"]];
+  const datePattern = /^(\d{1,2}[/.\-]\d{1,2}[/.\-]\d{4}|\d{4}-\d{2}-\d{2})/;
+  const amountPattern = /([-+]?\s*(?:R\$\s*)?(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})\s*$/i;
+  let pending = "";
+  const flush = () => {
+    const line = pending.replace(/\s+/g, " ").trim();
+    pending = "";
+    const date = line.match(datePattern)?.[1];
+    const rest = date ? line.slice(date.length).trim() : "";
+    const amount = rest.match(amountPattern);
+    if (!date || !amount) return;
+    const description = rest.slice(0, amount.index).trim();
+    if (description && !/^saldo do dia$/i.test(description)) result.push([date, description, amount[1]]);
+  };
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    if (datePattern.test(line)) {
+      flush();
+      pending = line;
+    } else if (pending) {
+      pending += ` ${line}`;
+    }
+  }
+  flush();
+  return result.length > 1 ? result : splitPdfStatement(text);
+}
+
 function parseDate(value: string) {
   const clean = value.trim();
   const brazilian = clean.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/);
@@ -89,8 +119,8 @@ export async function analyzeStatement(formData: FormData) {
     if (!accounts.length) return { success: false, message: "Cadastre uma conta antes de importar o extrato.", fieldErrors: {} };
     const isPdf = file.name.toLowerCase().endsWith(".pdf");
     const fileText = isPdf ? (await pdf(new Uint8Array(await file.arrayBuffer()))).text : await file.text();
-    const rows = isPdf ? splitPdfStatement(fileText) : splitCsv(fileText.replace(/^\uFEFF/, ""));
-    if (rows.length < 2) return { success: false, message: "O CSV precisa ter cabeçalho e ao menos um lançamento.", fieldErrors: {} };
+    const rows = isPdf ? splitBankPdfStatement(fileText) : splitCsv(fileText.replace(/^\uFEFF/, ""));
+    if (rows.length < 2) return { success: false, message: isPdf ? "Não encontrei lançamentos válidos neste PDF." : "O CSV precisa ter cabeçalho e ao menos um lançamento.", fieldErrors: {} };
     const headers = rows[0].map(normalizeHeader);
     const dateIndex = headers.findIndex((header) => ["data", "date", "datamovimento", "datalancamento", "datadetransacao", "lancamento"].includes(header));
     const descriptionIndex = headers.findIndex((header) => ["descricao", "description", "historico", "memo", "detalhes", "lancamentodescricao"].includes(header));
