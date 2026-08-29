@@ -92,13 +92,15 @@ export function TransactionList({
         return { success: true };
       }
     : undefined);
-  const isDeleting = deleting || cancelling;
   const [selectedTransaction, setSelectedTransaction] =
     useState<TransactionListItem | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteMessage, setDeleteMessage] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [bulkDeleteMessage, setBulkDeleteMessage] = useState("");
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const isDeleting = deleting || cancelling || bulkDeleting;
   const visibleIds = transactions.map((transaction) => transaction.id);
   const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
   const toggleSelected = (id: string) => setSelectedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
@@ -136,7 +138,7 @@ export function TransactionList({
                 {toolbar && <div className="mt-5">{toolbar}</div>}
                 {onBulkDelete && transactions.length > 0 && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2">
                   <label className="flex items-center gap-2 text-sm text-muted-foreground"><input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Selecionar todos os lançamentos visíveis" className="size-4 accent-primary" />Selecionar todos</label>
-                  {selectedIds.length > 0 && <button type="button" className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-status-danger transition-colors hover:bg-status-danger/10 hover:underline" onClick={() => setBulkDeleteDialogOpen(true)}><Trash2 className="size-4" />Excluir</button>}
+                  {selectedIds.length > 0 && <button type="button" className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-status-danger transition-colors hover:bg-status-danger/10 hover:underline" onClick={() => { setBulkDeleteMessage(""); setBulkDeleteDialogOpen(true); }} disabled={isDeleting}><Trash2 className="size-4" />Excluir</button>}
                 </div>}
               </div>
               <div
@@ -448,15 +450,16 @@ export function TransactionList({
           </AlertDialogContent>
         </AlertDialog>
       )}
-      {onBulkDelete && <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+      {onBulkDelete && <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={(open) => { if (!isDeleting) setBulkDeleteDialogOpen(open); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir lançamentos selecionados?</AlertDialogTitle>
             <AlertDialogDescription>Você selecionou {selectedIds.length} lançamento{selectedIds.length === 1 ? "" : "s"}. Eles serão cancelados e os saldos pagos serão ajustados.</AlertDialogDescription>
+            {bulkDeleteMessage && <p className="text-sm text-status-danger" role="alert">{bulkDeleteMessage}</p>}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction type="button" className="bg-status-danger text-white hover:bg-status-danger/90" disabled={isDeleting} onClick={async () => { const result = await onBulkDelete(selectedIds); if (result.success) { setSelectedIds([]); setBulkDeleteDialogOpen(false); } }}>{isDeleting ? "Excluindo..." : "Excluir selecionados"}</AlertDialogAction>
+            <AlertDialogAction type="button" className="bg-status-danger text-white hover:bg-status-danger/90" disabled={isDeleting} onClick={async () => { setBulkDeleting(true); setBulkDeleteMessage(""); try { const result = await onBulkDelete(selectedIds); if (result.success) { setSelectedIds([]); setBulkDeleteDialogOpen(false); } else { setBulkDeleteMessage(result.message ?? "Não foi possível excluir os lançamentos selecionados."); } } finally { setBulkDeleting(false); } }}>{isDeleting ? "Excluindo..." : "Excluir selecionados"}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>}
