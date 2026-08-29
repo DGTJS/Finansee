@@ -115,6 +115,10 @@ function normalizeMerchantDescription(description: string) {
   return description.replace(/\s+/g, " ").trim();
 }
 
+function duplicateKey(row: Pick<ImportedStatementRow, "date" | "description" | "amountCents">) {
+  return [row.date, normalizeMerchantDescription(row.description).toLowerCase(), row.amountCents].join("|");
+}
+
 function classify(description: string, kind: "income" | "expense", categories: Array<{ id: string; name: string; kind: string }>) {
   const text = description.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const keywords: Array<[RegExp, string]> = [
@@ -156,9 +160,10 @@ export async function analyzeStatement(formData: FormData) {
     const debitIndex = headers.findIndex((header) => ["debito", "debit", "saidas", "saida"].includes(header));
     const typeIndex = headers.findIndex((header) => ["tipo", "type", "natureza"].includes(header));
     if (dateIndex < 0 || descriptionIndex < 0 || (amountIndex < 0 && creditIndex < 0 && debitIndex < 0)) return { success: false, message: "Não encontrei as colunas de data, descrição e valor (ou crédito/débito) no extrato.", fieldErrors: {} };
-    const existing = await prisma.transaction.findMany({ where: { financialSpaceId: spaceId }, select: { importFingerprint: true, accountId: true, amountCents: true, description: true, competenceDate: true } });
-    const existingFingerprints = new Set(existing.flatMap((row) => [row.importFingerprint, fingerprint({ date: row.competenceDate.toISOString().slice(0, 10), accountId: row.accountId, amountCents: row.amountCents, description: row.description })].filter((value): value is string => Boolean(value))));
+    const existing = await prisma.transaction.findMany({ where: { financialSpaceId: spaceId, status: { not: "cancelled" } }, select: { importFingerprint: true, accountId: true, amountCents: true, description: true, competenceDate: true } });
+    const existingDuplicateKeys = new Set(existing.map((row) => duplicateKey({ date: row.competenceDate.toISOString().slice(0, 10), amountCents: row.amountCents, description: row.description })));
     const defaultAccountId = accounts[0].id;
+    const importedKeys = new Set<string>();
     const imported: ImportedStatementRow[] = rows.slice(1, MAX_ROWS + 1).flatMap((cells, index) => {
       const date = parseDate(cells[dateIndex] ?? ""); const rawAmount = amountIndex >= 0 ? parseMoney(cells[amountIndex] ?? "") : (parseMoney(cells[creditIndex] ?? "") ?? (parseMoney(cells[debitIndex] ?? "") === null ? null : -Math.abs(parseMoney(cells[debitIndex] ?? "") ?? 0))); const description = (cells[descriptionIndex] ?? "").trim();
       if (!date || rawAmount === null || rawAmount === 0 || description.length < 2) return [];
@@ -167,7 +172,11 @@ export async function analyzeStatement(formData: FormData) {
       const amountCents = kind === "expense" ? -Math.abs(rawAmount) : Math.abs(rawAmount);
       const normalizedDescription = normalizeMerchantDescription(description);
       const base = { date, description: normalizedDescription, amountCents, kind: kind as "income" | "expense", accountId: defaultAccountId, categoryId: classify(normalizedDescription, kind as "income" | "expense", categories) };
-      const importedFingerprint = fingerprint(base); return [{ ...base, id: `import-${index}-${importedFingerprint.slice(0, 8)}`, isDuplicate: existingFingerprints.has(importedFingerprint), duplicateOf: importedFingerprint }];
+      const importedFingerprint = fingerprint(base);
+      const key = duplicateKey(base);
+      const isDuplicate = existingDuplicateKeys.has(key) || importedKeys.has(key);
+      importedKeys.add(key);
+      return [{ ...base, id: `import-${index}-${importedFingerprint.slice(0, 8)}`, isDuplicate, duplicateOf: isDuplicate ? key : undefined }];
     });
     if (!imported.length) return { success: false, message: "Nenhum lançamento válido foi encontrado.", fieldErrors: {} };
     return { success: true, message: `${imported.length} lançamentos analisados.`, data: imported, fieldErrors: {} };
