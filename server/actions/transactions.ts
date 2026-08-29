@@ -89,26 +89,29 @@ export async function cancelTransaction(id: string, spaceId = activeSpaceId) {
   } catch { return { success: false, message: "Não foi possível cancelar a transação.", fieldErrors: {} }; }
 }
 
-export async function cancelTransactions(ids: string[], spaceId = activeSpaceId) {
+export async function deleteTransactions(ids: string[], spaceId = activeSpaceId) {
   const parsed = z.array(z.string().min(1)).min(1).max(100).safeParse(ids);
   if (!parsed.success) return { success: false, message: "Selecione ao menos um lançamento.", fieldErrors: {} };
   try { await requireSpaceAccess(spaceId, "transactions:write"); } catch (error) { return { success: false, message: authorizationMessage(error) ?? "Não foi possível autorizar a operação.", fieldErrors: {} }; }
-  const userId = await getCurrentUserId();
   try {
-    let cancelled = 0;
+    let deleted = 0;
     await prisma.$transaction(async (tx) => {
       const transactions = await tx.transaction.findMany({ where: { id: { in: [...new Set(parsed.data)] }, financialSpaceId: spaceId } });
       for (const current of transactions) {
-        if (current.status === "cancelled") continue;
+        if (current.status === "cancelled") {
+          await tx.transaction.delete({ where: { id: current.id } });
+          deleted += 1;
+          continue;
+        }
         if (current.status === "paid") await tx.financialAccount.update({ where: { id: current.accountId }, data: { balanceCents: { decrement: current.amountCents }, updatedAt: new Date() } });
-        await tx.transaction.update({ where: { id: current.id }, data: { status: "cancelled", cancelledBy: userId, updatedBy: userId, updatedAt: new Date() } });
-        cancelled += 1;
+        await tx.transaction.delete({ where: { id: current.id } });
+        deleted += 1;
       }
     });
     revalidatePath("/");
     revalidatePath("/transactions");
     revalidatePath("/calendar");
-    return { success: true, message: `${cancelled} lançamento${cancelled === 1 ? " cancelado" : "s cancelados"}.`, fieldErrors: {} };
+    return { success: true, message: `${deleted} lançamento${deleted === 1 ? " excluído" : "s excluídos"}.`, fieldErrors: {} };
   } catch { return { success: false, message: "Não foi possível excluir os lançamentos selecionados.", fieldErrors: {} }; }
 }
 

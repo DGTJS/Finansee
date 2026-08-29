@@ -454,7 +454,7 @@ export function TransactionList({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir lançamentos selecionados?</AlertDialogTitle>
-            <AlertDialogDescription>Você selecionou {selectedIds.length} lançamento{selectedIds.length === 1 ? "" : "s"}. Eles serão cancelados e os saldos pagos serão ajustados.</AlertDialogDescription>
+            <AlertDialogDescription>Você selecionou {selectedIds.length} lançamento{selectedIds.length === 1 ? "" : "s"}. Eles serão excluídos permanentemente e os saldos pagos serão ajustados.</AlertDialogDescription>
             {bulkDeleteMessage && <p className="text-sm text-status-danger" role="alert">{bulkDeleteMessage}</p>}
           </AlertDialogHeader>
           <AlertDialogFooter>
