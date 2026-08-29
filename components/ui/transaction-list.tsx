@@ -136,7 +136,7 @@ export function TransactionList({
                 {toolbar && <div className="mt-5">{toolbar}</div>}
                 {onBulkDelete && transactions.length > 0 && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2">
                   <label className="flex items-center gap-2 text-sm text-muted-foreground"><input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Selecionar todos os lançamentos visíveis" className="size-4 accent-primary" />Selecionar todos</label>
-                  {selectedIds.length > 0 && <button type="button" className="text-sm font-semibold text-status-danger hover:underline" onClick={() => setBulkDeleteDialogOpen(true)}>Excluir selecionados ({selectedIds.length})</button>}
+                  {selectedIds.length > 0 && <button type="button" className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-status-danger transition-colors hover:bg-status-danger/10 hover:underline" onClick={() => setBulkDeleteDialogOpen(true)}><Trash2 className="size-4" />Excluir</button>}
                 </div>}
               </div>
               <div
@@ -166,7 +166,7 @@ export function TransactionList({
                       }}
                     >
                       {onBulkDelete && <input type="checkbox" checked={selectedIds.includes(transaction.id)} aria-label={`Selecionar ${transaction.name}`} onChange={() => toggleSelected(transaction.id)} onClick={(event) => event.stopPropagation()} className="mx-1 size-4 shrink-0 accent-primary" />}
-                      <span className="flex min-w-0 items-center gap-3">
+                      <span className="flex min-w-0 flex-1 items-start gap-3 text-left">
                         <motion.span
                           layoutId={`icon-${transaction.id}`}
                           className="relative grid size-10 shrink-0 place-items-center rounded-full bg-foreground text-background"
@@ -180,7 +180,7 @@ export function TransactionList({
                             compact
                           />
                         </motion.span>
-                        <span className="min-w-0">
+                        <span className="min-w-0 flex-1 text-left">
                           <motion.span
                             layoutId={`name-${transaction.id}`}
                             className="block truncate font-medium text-foreground"
